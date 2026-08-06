@@ -4,9 +4,9 @@
 
 ## 当前进度
 
-Android App 首轮骨架与设备认证流程已实现，App 当前版本为 `0.1.1`，首次正式存档标签为 `v0.1`。已在 Vivo V2405A（Android 15 / API 35）上完成真实后台、USB 反向端口、生物识别参与的完整端到端验证，以及从 `0.1.0` 到 `0.1.1` 的不卸载覆盖安装验证。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
+Android App 首轮骨架与设备认证流程已实现，当前正式存档版本（Git 标签）为 `v0.1`，APK 内部 `versionName` 为 `0.1.1`。已在 Vivo V2405A（Android 15 / API 35）上完成真实后台、USB 反向端口、生物识别参与的完整端到端验证，以及从 `0.1.0` 到 `0.1.1` 的不卸载覆盖安装验证。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
 
-CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；首次运行需在创世提交 push 后实际核验，当前不预先宣称通过。
+CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint。[CI #2](https://github.com/z987645344-arch/zhiliaohub_app/actions/runs/31090840332) 已在修正 runner 的 `sdkmanager` PATH 差异后真实运行成功；首次失败记录仍保留在 Actions 历史中。
 
 ## 已完成
 

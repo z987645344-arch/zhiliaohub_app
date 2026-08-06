@@ -2,10 +2,11 @@
 
 ## v0.1 首次存档 - 2026-08-06
 
-- 准备将当前 Kotlin Android 工程作为一次诚实的创世提交存档到 [GitHub 仓库](https://github.com/z987645344-arch/zhiliaohub_app)。
+- 已将当前 Kotlin Android 工程以创世提交 `74b89b1` 存档到 [GitHub 仓库](https://github.com/z987645344-arch/zhiliaohub_app)。
 - 新增 GitHub Actions CI，对 `main` 的 push 和 pull request 执行 `assembleDebug`、`testDebugUnitTest` 与 `lintDebug`。
 - 首次存档包含设备配对、挑战应答登录、session 持久化、吊销处理、健康状态卡片，以及已通过的 8 项真机端到端验证和覆盖安装验证。
-- 计划使用 `v0.1` 标签，明确生产 HTTPS、网络异常和生物识别锁定等边界场景仍待补测；首次 CI 运行结果将在 push 后据实补充。
+- 使用 `v0.1` 标签，明确生产 HTTPS、网络异常和生物识别锁定等边界场景仍待补测。
+- GitHub Actions 首次运行因 runner 中的 `sdkmanager` 不在 PATH 而以退出码 127 失败；删除多余的 SDK 安装步骤后，[CI #2](https://github.com/z987645344-arch/zhiliaohub_app/actions/runs/31090840332) 成功完成 Debug 编译、JVM 单元测试和 Android Lint。
 
 ## 0.1.1 - 2026-08-06
 
