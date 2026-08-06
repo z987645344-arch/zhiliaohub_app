@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">知了hub 管理助手</string>
+    <string name="settings_title">服务器设置</string>
+    <string name="pairing_title">配对当前设备</string>
+    <string name="main_title">知了hub</string>
+    <string name="main_subtitle">安全设备登录与极简状态监控</string>
+    <string name="version_format">版本 %1$s</string>
+    <string name="login_status">登录状态</string>
+    <string name="server_not_configured">尚未设置服务器</string>
+    <string name="reading_configuration">正在读取配置…</string>
+    <string name="server_settings">服务器设置</string>
+    <string name="retry">重试</string>
+    <string name="start_pairing">开始配对</string>
+    <string name="health_card_title">网站健康状态</string>
+    <string name="not_checked">尚未检查</string>
+    <string name="last_checked_empty">最近检查：—</string>
+    <string name="check_now">立即检查</string>
+    <string name="future_cards_title">后续监控卡片</string>
+    <string name="future_cards_description">这里仅预留扩展位置。本版本不展示备份状态、反馈提醒或任何尚无接口的数据。</string>
+    <string name="pairing_description">先用密码 + TOTP 登录网页后台，在设备管理页生成一次性配对码。私钥将在 Android Keystore 内生成且不可导出。</string>
+    <string name="device_name_hint">设备名称</string>
+    <string name="pairing_code_hint">XXXXX-XXXXX</string>
+    <string name="submit_pairing">提交配对</string>
+    <string name="change_server_address">修改服务器地址</string>
+    <string name="back">返回</string>
+    <string name="settings_description">输入后台服务根地址，例如 http://192.168.1.20:3001。地址不能包含账号、查询参数或额外路径。</string>
+    <string name="server_url_hint">https://admin.example.com</string>
+    <string name="http_warning">当前为开发模式，未加密连接，正式部署后必须改为 HTTPS 地址。HTTP 会暴露会话与传输内容，只应用于你手动填写的受控开发服务器。</string>
+    <string name="http_acknowledgement">我确认这是临时开发地址，并了解明文连接风险</string>
+    <string name="save_server_address">保存服务器地址</string>
+    <string name="clear_session_cookie">仅清除会话 Cookie</string>
+    <string name="reset_pairing">清除本机配对并删除设备密钥</string>
+</resources>

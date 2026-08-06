@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      Android cannot express a runtime, user-entered host in this static XML file.
+      Cleartext is therefore enabled at the platform layer for development, while
+      ApiClientFactory enforces the exact saved origin and disables redirects.
+      SettingsActivity also requires an explicit warning acknowledgement for HTTP.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+
