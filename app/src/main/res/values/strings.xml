@@ -25,8 +25,9 @@
     <string name="change_server_address">修改服务器地址</string>
     <string name="back">返回</string>
     <string name="settings_description">输入后台服务根地址，例如 http://192.168.1.20:3001。地址不能包含账号、查询参数或额外路径。</string>
+    <string name="trusted_lan_hint">局域网使用需确保手机与电脑在同一 WiFi，且仅建议在可信任的家庭网络下使用。</string>
     <string name="server_url_hint">https://admin.example.com</string>
-    <string name="http_warning">当前为开发模式，未加密连接，正式部署后必须改为 HTTPS 地址。HTTP 会暴露会话与传输内容，只应用于你手动填写的受控开发服务器。</string>
+    <string name="http_warning">当前为开发模式，未加密连接，正式部署后必须改为 HTTPS 地址。HTTP 仅允许 localhost、回环地址或 RFC1918 私有 IPv4，仍会暴露会话与传输内容。</string>
     <string name="http_acknowledgement">我确认这是临时开发地址，并了解明文连接风险</string>
     <string name="save_server_address">保存服务器地址</string>
     <string name="clear_session_cookie">仅清除会话 Cookie</string>

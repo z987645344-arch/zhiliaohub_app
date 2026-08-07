@@ -27,12 +27,26 @@ data class ServerAddress(
             require(url.encodedPath == "/") {
                 "请输入服务根地址，不要附加接口路径。"
             }
+            require(url.scheme != "http" || isAllowedCleartextHost(url.host)) {
+                "HTTP 开发地址只允许 localhost、127.0.0.0/8 或 RFC1918 私有 IPv4；公网地址必须使用 HTTPS。"
+            }
             val normalized = url.newBuilder().encodedPath("/").build().toString().removeSuffix("/")
             return ServerAddress(normalized = normalized, httpUrl = url)
+        }
+
+        private fun isAllowedCleartextHost(host: String): Boolean {
+            if (host.equals("localhost", ignoreCase = true)) return true
+            val octets = host.split('.').map { it.toIntOrNull() ?: return false }
+            if (octets.size != 4 || octets.any { it !in 0..255 }) return false
+            return when (octets[0]) {
+                10, 127 -> true
+                172 -> octets[1] in 16..31
+                192 -> octets[1] == 168
+                else -> false
+            }
         }
 
         fun sameOrigin(first: HttpUrl, second: HttpUrl): Boolean =
             first.scheme == second.scheme && first.host == second.host && first.port == second.port
     }
 }
-

@@ -2,8 +2,9 @@
 <network-security-config>
     <!--
       Android cannot express a runtime, user-entered host in this static XML file.
-      Cleartext is therefore enabled at the platform layer for development, while
-      ApiClientFactory enforces the exact saved origin and disables redirects.
+      Cleartext is therefore enabled at the platform layer for development. The app
+      layer restricts HTTP configuration to localhost/loopback or RFC1918 IPv4,
+      ApiClientFactory enforces the exact saved origin, and redirects are disabled.
       SettingsActivity also requires an explicit warning acknowledgement for HTTP.
     -->
     <base-config cleartextTrafficPermitted="true">
@@ -12,4 +13,3 @@
         </trust-anchors>
     </base-config>
 </network-security-config>
-

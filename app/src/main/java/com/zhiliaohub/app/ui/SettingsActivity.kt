@@ -19,7 +19,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
     private val app: ZhiliaohubApplication
         get() = application as ZhiliaohubApplication
-    private var originalServerUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +46,6 @@ class SettingsActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val settings = app.appPreferences.current()
-            originalServerUrl = settings.serverUrl
             binding.serverUrlInput.setText(settings.serverUrl.orEmpty())
             updateAddressFeedback()
         }
@@ -76,15 +74,15 @@ class SettingsActivity : AppCompatActivity() {
 
         setBusy(true)
         lifecycleScope.launch {
-            if (originalServerUrl != null && originalServerUrl != address.normalized) {
-                withContext(Dispatchers.IO) { app.registrationManager.resetPairing() }
-            }
             app.appPreferences.setServerUrl(address.normalized)
-            originalServerUrl = address.normalized
             setResult(Activity.RESULT_OK)
             Toast.makeText(
                 this@SettingsActivity,
-                if (address.isCleartext) "开发地址已保存；当前连接未加密。" else "HTTPS 服务器地址已保存。",
+                if (address.isCleartext) {
+                    "开发地址已保存；当前连接未加密。已有配对和设备密钥保持不变。"
+                } else {
+                    "HTTPS 服务器地址已保存；已有配对和设备密钥保持不变。"
+                },
                 Toast.LENGTH_LONG,
             ).show()
             finish()

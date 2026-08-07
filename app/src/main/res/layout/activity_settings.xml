@@ -25,6 +25,13 @@
             android:text="@string/settings_description"
             android:textColor="@color/steel_blue_dark" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/trusted_lan_hint"
+            android:textColor="@color/steel_blue_dark" />
+
         <EditText
             android:id="@+id/serverUrlInput"
             android:layout_width="match_parent"

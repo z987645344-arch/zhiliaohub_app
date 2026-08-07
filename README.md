@@ -2,7 +2,7 @@
 
 知了hub 管理助手是 `zhiliaohub` 管理后台的配套原生 Android App。当前版本聚焦单设备安全配对、持久会话、P-256 挑战应答登录和一个真实的网站健康状态卡片，不包含内容编辑、二维码扫描或尚无服务端接口的监控数据。
 
-本仓库与主站仓库相互独立。App 只对接服务端已有接口，本轮没有修改 `zhiliaohub/` 或 `admin-server/`。
+本仓库与主站仓库相互独立。App 只对接服务端公开接口；服务端配套改动仍在独立的 `zhiliaohub` 仓库维护。
 
 兼容性：依赖 `zhiliaohub admin-server v1.2+` 提供的设备认证接口。
 
@@ -42,13 +42,25 @@ app/build/outputs/apk/debug/app-debug.apk
 4. 在 App 中手动输入 `XXXXX-XXXXX` 配对码并提交。
 5. 后续启动会优先使用持久化 session Cookie。Cookie 失效时，App 才申请新挑战并弹出生物识别窗口。
 
-Android 模拟器访问宿主机服务时通常使用 `10.0.2.2`；真机需要填写电脑在同一局域网中的地址，并确保后台监听地址及系统防火墙允许该连接。不要为测试把管理后台直接暴露到公网。
+## 开发期连接方式
+
+推荐在可信任的家庭网络内使用同一 WiFi 局域网直连：
+
+1. 手机与电脑连接同一 WiFi。
+2. 后台 `.env` 将 `HOST` 设置为 `0.0.0.0` 后重启；启动日志会列出全部检测到的非虚拟 RFC1918 IPv4 局域网访问地址。
+3. 只在 Windows 防火墙的“专用网络”范围允许后台端口，不要开放到公用网络或公网。
+4. 在 App 设置页手动填写日志中的地址，例如 `http://192.168.1.20:3001`。
+
+仅修改服务器地址不会清除配对标记或 Android Keystore 私钥。Cookie 仍按原始主机隔离，不会从 `localhost` 跨主机发送给局域网 IP；新地址没有有效 Cookie 时，App 会复用原设备私钥正常触发生物识别挑战登录，无需重新配对。
+
+USB 调试场景仍可使用 `adb reverse tcp:3001 tcp:3001` 和 `http://localhost:3001` 作为备选。Android 模拟器访问宿主机通常使用 `http://10.0.2.2:3001`。局域网 IP 可能随路由器分配变化，地址失效时需手动填写新地址；本版本不提供 mDNS、自动发现或 IP 自动更新。
 
 ## HTTP 开发模式的边界
 
 `network_security_config.xml` 是静态资源，Android 无法在其中声明运行时由用户输入的域名。因此本项目采用两层限制：
 
 - Android 平台层允许开发期明文流量；
+- App 层只接受 `localhost`、`127.0.0.0/8` 和 RFC1918 私有 IPv4（`10/8`、`172.16/12`、`192.168/16`）作为 HTTP 地址，公网地址必须使用 HTTPS；
 - App 只根据用户明确保存的根地址构造请求，OkHttp 拦截器校验 scheme、host、port 必须与该地址完全一致，并禁用 HTTP/HTTPS 重定向。
 
 这可以把 App 自身的请求限制到用户指定的 origin，但不能让 HTTP 变得安全。HTTP 下 session Cookie 和响应内容仍可能被窃听或篡改。
@@ -62,7 +74,7 @@ Android 模拟器访问宿主机服务时通常使用 `10.0.2.2`；真机需要�
 - 非敏感设置：服务器地址和“已配对”标记保存在 Preferences DataStore；该标记不能替代 Keystore 密钥或服务端认证。
 - 日志：代码不记录私钥、签名原文、Cookie 或配对码。
 
-更换服务器地址会清除旧 session、删除原设备签名密钥并重置本地配对状态。设置页也提供“仅清除会话 Cookie”和“清除本机配对并删除设备密钥”操作。
+更换同一后台的可达地址会保留配对状态和设备签名密钥；旧 session Cookie 继续遵循 host/domain 匹配规则，不会跨主机发送。设置页另行提供“仅清除会话 Cookie”和需要明确确认的“清除本机配对并删除设备密钥”操作。
 
 ## 已对接接口
 
@@ -107,6 +119,6 @@ app/src/main/
 
 ## 当前验证状态
 
-2026-08-06 已实际完成 Debug APK 编译、7 个 JVM 单元测试和 Android Lint；在 Vivo V2405A（Android 15 / API 35）上完成 8 项真实端到端验证，并验证从 `0.1.0` 覆盖安装到 `0.1.1` 后配对状态、Keystore 私钥和 session Cookie 均保留。生产 HTTPS、网络异常和生物识别锁定等边界仍待验证，详见 [STATUS.md](STATUS.md)。
+2026-08-07 已完成局域网地址限制与地址切换解耦实现，9 个 JVM 单元测试、Debug 构建和 Android Lint 通过；并在 Vivo V2405A（Android 15 / API 35）上关闭全部 `adb reverse` 后，通过同一 WiFi 的电脑 RFC1918 地址完成挑战登录、健康状态在线、断网超时提示和 WiFi 恢复验证，全程无需重新配对。此前的 8 项 USB 端到端验证及 `0.1.0` → `0.1.1` 覆盖安装数据保留验证也均通过，详见 [STATUS.md](STATUS.md)。
 
 仓库使用 [GitHub Actions](https://github.com/z987645344-arch/zhiliaohub_app/actions) 在 push 或 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；CI 不运行模拟器或替代人工真机验证。

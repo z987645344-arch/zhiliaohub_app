@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2 - 2026-08-07
+
+- 将 `versionCode` 从 2 递增为 3，`versionName` 从 `0.1.1` 更新为 `0.2.0`；本轮以 `v0.2` 标签存档并推送到 [GitHub仓库](https://github.com/z987645344-arch/zhiliaohub_app)。
+
+- HTTP 开发地址新增 localhost、回环及 RFC1918 私有 IPv4 白名单，拒绝任意公网 HTTP 地址；OkHttp 唯一 origin 锁定和禁用重定向保持不变。
+- 修改同一后台的服务器地址不再清除配对标记、session 存储或 Keystore 设备密钥；Cookie 仍按主机隔离，新地址必要时复用原密钥走生物识别挑战登录。
+- 设置页新增同一 WiFi 与可信任家庭网络提示，README 补充局域网直连和 USB `adb reverse` 备选步骤。
+- 9 项 JVM 单元测试、Debug APK 构建和 Android Lint（0 errors）通过。
+- 在 Vivo V2405A 上清空全部 `adb reverse` 后，使用同一 WiFi 的电脑 RFC1918 地址完成真实挑战登录；地址切换保留配对和 Keystore 私钥，健康状态显示“在线”。
+- 用户关闭 WiFi 后 App 明确显示请求超时，重新开启 WiFi 后网站健康状态恢复，无需重新配对。
+- 首次联调曾因后台由 Codex 沙箱权限启动、真实 SQLite 写入受限而返回 HTTP 500；改用真实用户权限启动后 challenge 返回 `201`。该问题属于测试进程权限，不是 App 或认证协议缺陷。
+
 ## v0.1 首次存档 - 2026-08-06
 
 - 已将当前 Kotlin Android 工程以创世提交 `74b89b1` 存档到 [GitHub 仓库](https://github.com/z987645344-arch/zhiliaohub_app)。
