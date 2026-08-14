@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
                 is ApiResult.NetworkFailure -> showAuthError(
-                    networkMessage(session.exception),
+                    networkMessage(session.exception, session.automaticRetryCount),
                     canRetry = true,
                     canPair = false,
                 )
@@ -140,7 +140,11 @@ class MainActivity : AppCompatActivity() {
                     canPair = false,
                 )
             }
-            is ApiResult.NetworkFailure -> showAuthError(networkMessage(result.exception), true, false)
+            is ApiResult.NetworkFailure -> showAuthError(
+                networkMessage(result.exception, result.automaticRetryCount),
+                true,
+                false,
+            )
             is ApiResult.ProtocolFailure -> showAuthError(result.message, true, false)
         }
     }
@@ -228,7 +232,11 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
-            is ApiResult.NetworkFailure -> showAuthError(networkMessage(result.exception), true, false)
+            is ApiResult.NetworkFailure -> showAuthError(
+                networkMessage(result.exception, result.automaticRetryCount),
+                true,
+                false,
+            )
             is ApiResult.ProtocolFailure -> showAuthError(result.message, true, false)
         }
     }
@@ -244,7 +252,11 @@ class MainActivity : AppCompatActivity() {
                 canRetry = true,
                 canPair = true,
             )
-            is ApiResult.NetworkFailure -> showAuthError(networkMessage(probe.exception), true, false)
+            is ApiResult.NetworkFailure -> showAuthError(
+                networkMessage(probe.exception, probe.automaticRetryCount),
+                true,
+                false,
+            )
             is ApiResult.ProtocolFailure -> showAuthError(probe.message, true, false)
         }
     }
@@ -299,11 +311,11 @@ class MainActivity : AppCompatActivity() {
                 }
                 is ApiResult.HttpFailure -> {
                     markHealthOffline()
-                    "健康检查返回 HTTP ${result.statusCode}。"
+                    "健康检查失败（HTTP ${result.statusCode}）：${result.message}"
                 }
                 is ApiResult.NetworkFailure -> {
                     markHealthOffline()
-                    networkMessage(result.exception)
+                    networkMessage(result.exception, result.automaticRetryCount)
                 }
                 is ApiResult.ProtocolFailure -> {
                     markHealthOffline()

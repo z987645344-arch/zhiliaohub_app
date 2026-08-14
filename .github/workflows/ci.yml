@@ -29,11 +29,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+      - name: Assemble production and test debug APKs
+        run: ./gradlew assembleProdDebug assembleQaDebug
 
-      - name: Run debug unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run production and test unit tests
+        run: ./gradlew testProdDebugUnitTest testQaDebugUnitTest
 
-      - name: Run debug lint
-        run: ./gradlew lintDebug
+      - name: Run production and test lint
+        run: ./gradlew lintProdDebug lintQaDebug

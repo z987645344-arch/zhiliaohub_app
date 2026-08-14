@@ -14,24 +14,44 @@
 - Android SDK Build Tools 35.0.0 或兼容版本
 - Gradle Wrapper 8.14（仓库已包含 Wrapper）
 
-在 Android Studio 中打开仓库根目录并等待 Gradle Sync 完成即可运行。命令行构建示例：
+在 Android Studio 中打开仓库根目录并等待 Gradle Sync 完成即可运行。项目提供两个共用 `src/main` 源码的构建变体：
+
+| 用途 | Gradle flavor | applicationId | 桌面名称 |
+|---|---|---|---|
+| 正式版 | `prod` | `com.zhiliaohub.app` | 知了hub |
+| 测试版 | `qa` | `com.zhiliaohub.app.test` | 知了hub·测试 |
+
+Android Gradle Plugin保留了以 `test` 开头的flavor名称，因此构建期使用 `qa`；它产出的仍是明确标识为“测试”的独立App。两个包可以同时安装，Android按不同包名/UID隔离DataStore、加密Cookie和Keystore密钥。测试版使用橙色 `T` 图标，正式版继续使用原蓝灰图标。
+
+测试环境地址不会写死在APK中。首次打开测试版仍需在设置页手动填写当前本地地址，避免局域网IP变化后继续误连旧环境。
+
+命令行构建示例：
 
 确保 `ANDROID_HOME` 或 `ANDROID_SDK_ROOT` 指向本机 Android SDK 后执行：
 
 ```powershell
-.\gradlew.bat :app:assembleDebug
+.\gradlew.bat :app:assembleProdDebug :app:assembleQaDebug
 ```
 
 Debug APK 输出到：
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/prod/debug/app-prod-debug.apk
+app/build/outputs/apk/qa/debug/app-qa-debug.apk
+```
+
+连接真机后可分别安装；两条命令不会互相覆盖：
+
+```powershell
+.\gradlew.bat :app:installProdDebug
+.\gradlew.bat :app:installQaDebug
 ```
 
 运行本地测试与 Lint：
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:lintDebug
+.\gradlew.bat :app:testProdDebugUnitTest :app:testQaDebugUnitTest
+.\gradlew.bat :app:lintProdDebug :app:lintQaDebug
 ```
 
 ## 首次使用
@@ -102,6 +122,9 @@ app/src/main/
 └── res/
     ├── layout/     # 原生 View XML
     └── xml/        # 网络安全与数据导出规则
+
+app/src/qa/res/
+└── drawable/ic_app.xml # 仅测试版使用的橙色T图标；无独立Kotlin源码
 ```
 
 ## 主要依赖
@@ -119,6 +142,6 @@ app/src/main/
 
 ## 当前验证状态
 
-2026-08-07 已完成局域网地址限制与地址切换解耦实现，9 个 JVM 单元测试、Debug 构建和 Android Lint 通过；并在 Vivo V2405A（Android 15 / API 35）上关闭全部 `adb reverse` 后，通过同一 WiFi 的电脑 RFC1918 地址完成挑战登录、健康状态在线、断网超时提示和 WiFi 恢复验证，全程无需重新配对。此前的 8 项 USB 端到端验证及 `0.1.0` → `0.1.1` 覆盖安装数据保留验证也均通过，详见 [STATUS.md](STATUS.md)。
+2026-08-14 已完成两个Debug变体的编译、各9项JVM测试和Lint（0 errors），并在Vivo V2405A（Android 15 / API 35）上并行安装。测试版通过独立UID在本地后台完成配对、生物识别登录和健康状态“在线”；正式版覆盖安装保留原生产设置和本地凭据，重启后现有生产会话免生物识别恢复且健康状态“在线”，但过程中观察到一次可恢复的瞬时网络失败。本轮没有清除正式版生产凭据重新配对。此前局域网、USB端到端及覆盖安装验证记录详见 [STATUS.md](STATUS.md)。
 
 仓库使用 [GitHub Actions](https://github.com/z987645344-arch/zhiliaohub_app/actions) 在 push 或 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；CI 不运行模拟器或替代人工真机验证。

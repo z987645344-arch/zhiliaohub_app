@@ -1,14 +1,23 @@
 # 项目状态
 
-> 最后更新：2026-08-07
+> 最后更新：2026-08-14
 
 ## 当前进度
 
-Android App 当前正式存档版本（Git 标签）为 `v0.2`，APK 内部 `versionName` 为 `0.2.0`。同一 WiFi 局域网直连所需的 HTTP 私网地址约束、地址切换不重置配对和设置页提示已实现，并在 Vivo V2405A（Android 15 / API 35）上完成无 `adb reverse` 的真实验证。此前的 USB 反向端口端到端验证和不卸载覆盖安装验证也已通过。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
+Android App 当前正式存档版本为 `v0.3`，APK 内部 `versionName` 为 `0.3.0`、`versionCode` 为4。本版本包含 `prod`/`qa` 双Product Flavor和网络切换容错：正式版包名保持 `com.zhiliaohub.app`，测试版使用 `com.zhiliaohub.app.test`，二者共用同一份源码并可在一台手机并行安装。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
 
 CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint。[CI #2](https://github.com/z987645344-arch/zhiliaohub_app/actions/runs/31090840332) 已在修正 runner 的 `sdkmanager` PATH 差异后真实运行成功；首次失败记录仍保留在 Actions 历史中。
 
 ## 已完成
+
+- `prod` 正式构建变体：桌面名称“知了hub”，保留原包名和原蓝灰图标。
+- `qa` 测试构建变体：桌面名称“知了hub·测试”，使用 `.test` 包名后缀和专属橙色 `T` 图标。
+- 两个变体只共用 `src/main` Kotlin代码；`src/qa` 仅包含测试版图标资源，没有复制源码。
+- CI显式覆盖两个Debug变体的编译、单元测试与Lint。
+- 会话检查与健康检查遇到可重试传输错误时，分别等待500毫秒、1.5秒，最多自动重试2次。
+- 配对、申请登录挑战、提交签名三个认证POST不自动重试，避免重复消费一次性状态或触发额外限流。
+- 使用Android默认网络回调监听网络建立、断开和切换；OkHttp派生客户端共享连接池，网络变化后统一清理旧连接。
+- OkHttp 5.3.0启用Fast Fallback；DNS、超时、连接重置、TLS及常见HTTP业务失败采用分类中文提示。
 
 - Kotlin 原生 Android 工程与 Gradle Wrapper。
 - `minSdk 26`、`targetSdk 36`，原生 XML View 风格统一。
@@ -26,11 +35,38 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 
 ## 已验证
 
-- `:app:assembleDebug` 构建成功。
-- Debug APK 已生成于 `app/build/outputs/apk/debug/app-debug.apk`。
-- `:app:testDebugUnitTest`：9 项通过，0 失败，覆盖服务器 URL/origin、HTTP 私网范围与配对码格式逻辑。
-- `:app:lintDebug`：0 errors；已检查 Android API、资源和安全配置。本轮保留开发 HTTP 与固定兼容版本产生的说明性 warning。
-- `:app:installDebug` 已将 `0.1.0` 干净安装到 Vivo V2405A（Android 15 / API 35）。
+### 双构建变体与真机并行安装（2026-08-14）
+
+| 检查项 | 真实结果 |
+|---|---|
+| APK构建 | `assembleProdDebug`、`assembleQaDebug` 均成功；分别生成 `app-prod-debug.apk`、`app-qa-debug.apk` |
+| 包名与名称 | AAPT真实读取为 `com.zhiliaohub.app / 知了hub`、`com.zhiliaohub.app.test / 知了hub·测试` |
+| 单元测试 | 本轮回归后 `prodDebug` 16项、`qaDebug` 16项，均0失败（原9项保持通过，新增7项网络容错测试） |
+| Android Lint | 两个变体均0 errors |
+| 真机安装 | Vivo V2405A同时安装成功；UID分别为10430与10434，没有卸载或包冲突 |
+| 正式版覆盖 | `firstInstallTime` 仍为2026-08-06，版本更新为0.2.0；生产地址DataStore和加密Cookie文件保留 |
+| 测试版初始状态 | 首次启动显示“尚未设置服务器”，没有读取正式版DataStore或Cookie |
+| 地址隔离 | 测试版通过真实设置页保存 `http://localhost:3001` 后，正式版继续保存 `https://zhiliaohub.com` |
+| 测试版本地配对登录 | **通过**：用户用本地后台新配对码完成生物识别挑战登录；ADB确认 `http://localhost:3001`、成功文案、独立加密Cookie文件及健康状态“在线” |
+| 正式版生产会话恢复 | **通过，但观察到一次瞬时失败**：覆盖安装保留生产地址、配对DataStore和加密Cookie；用户先遇到“网络请求失败”，随后ADB强制重启正式版后确认现有会话免生物识别恢复、`https://zhiliaohub.com` 健康状态“在线”。本轮未清除正式版生产凭据重新配对，以免无必要地扰动生产设备状态 |
+
+### 网络切换容错验证（2026-08-14）
+
+| 检查项 | 真实结果 |
+|---|---|
+| 自动化测试 | 两个变体各16项，0失败；覆盖500ms/1.5s退避、最多2次重试、只读/认证写请求分类、HTTP与TLS不重试、错误分类文案 |
+| 构建与Lint | `assembleProdDebug`、`assembleQaDebug`成功；`lintProdDebug`、`lintQaDebug`均0 errors、8 warnings |
+| 覆盖安装 | 最终网络层代码已生成两个APK；真机覆盖安装过程中未卸载、未清除DataStore、Cookie或Keystore凭据 |
+| WiFi切到移动网络 | 默认网络从WiFi切换到蜂窝网络后，正式版真实复现连接重置；只读请求完成2次自动重试，界面明确显示“连接被网络或代理线路重置”及重试次数。移动数据链路最终仍失败 |
+| 移动网络恢复WiFi | WiFi重新建立后连接池被网络回调清理；两轮均无需杀死App。第一轮较快恢复，第二轮在初始约22秒窗口内仍失败，继续等待至约40秒并手动重试后才恢复生产会话与“在线”。证明恢复路径可用，但不能保证底层线路立即稳定 |
+| 未完全复现部分 | 未能人为精确复现此前代理软件香港节点的内部虚拟DNS切换过程；自动恢复在真实长期代理波动下的效果仍需继续观察 |
+
+### 历史单变体验证（2026-08-06至08-07，Product Flavor重构前）
+
+- 当时的 `:app:assembleDebug` 构建成功，APK生成于旧路径 `app/build/outputs/apk/debug/app-debug.apk`。
+- 当时的 `:app:testDebugUnitTest`：9项通过，0失败，覆盖服务器URL/origin、HTTP私网范围与配对码格式逻辑。
+- 当时的 `:app:lintDebug`：0 errors；检查Android API、资源和安全配置。
+- 当时的 `:app:installDebug` 已将 `0.1.0` 干净安装到Vivo V2405A（Android 15 / API 35）。当前应改用上表中的flavor专属任务和输出路径。
 - 本地真实 `admin-server` 在 `127.0.0.1:3001` 启动，`/health` 返回 `ok`；真机通过 `adb reverse tcp:3001 tcp:3001` 访问 `http://localhost:3001`。
 - `0.1.1` 构建、7 项 JVM 单元测试和 Android Lint 回归通过，并通过 `:app:installDebug` 在不卸载、不清数据的情况下覆盖现有 `0.1.0`。
 
@@ -82,7 +118,8 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 
 ## 尚未验证
 
-- 未验证生产域名、真实 HTTPS 证书和反向代理环境。
+- 当前移动数据直连生产域名仍会发生连接重置，即使App完成2次只读请求自动重试也可能最终失败；这是运营商/代理/生产域名之间的底层线路问题，需从网络路径继续定位，不能宣称已由App修复。
+- 未精确复现代理软件香港节点内部DNS切换的原始瞬时故障；本轮验证了WiFi/移动网络切换、连接池清理、分类提示和恢复流程，真实代理线路下的长期效果仍需后续观察。
 - 未验证系统生物识别锁定、取消、重新录入导致 Keystore 密钥失效的真机分支。
 - 未在真机上专门压测配对/认证限流、挑战过期和并发请求。
 

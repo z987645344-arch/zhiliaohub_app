@@ -4,6 +4,7 @@ import android.app.Application
 import com.zhiliaohub.app.data.AppPreferences
 import com.zhiliaohub.app.data.RegistrationManager
 import com.zhiliaohub.app.network.ApiClientFactory
+import com.zhiliaohub.app.network.NetworkConnectionMonitor
 import com.zhiliaohub.app.security.DeviceKeyManager
 import com.zhiliaohub.app.security.EncryptedSessionCookieJar
 
@@ -18,6 +19,7 @@ class ZhiliaohubApplication : Application() {
         private set
     lateinit var apiClientFactory: ApiClientFactory
         private set
+    private lateinit var networkConnectionMonitor: NetworkConnectionMonitor
 
     override fun onCreate() {
         super.onCreate()
@@ -30,6 +32,14 @@ class ZhiliaohubApplication : Application() {
             sessionCookieJar = sessionCookieJar,
         )
         apiClientFactory = ApiClientFactory(sessionCookieJar)
+        networkConnectionMonitor = NetworkConnectionMonitor(this) {
+            apiClientFactory.evictAllConnections()
+        }
+        networkConnectionMonitor.start()
+    }
+
+    override fun onTerminate() {
+        networkConnectionMonitor.stop()
+        super.onTerminate()
     }
 }
-

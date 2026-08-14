@@ -122,7 +122,9 @@ class PairingActivity : AppCompatActivity() {
                     finish()
                 }
                 is ApiResult.HttpFailure -> showStatus(pairingHttpError(result))
-                is ApiResult.NetworkFailure -> showStatus(networkMessage(result.exception))
+                is ApiResult.NetworkFailure -> showStatus(
+                    networkMessage(result.exception, result.automaticRetryCount),
+                )
                 is ApiResult.ProtocolFailure -> showStatus(result.message)
             }
             setBusy(false)

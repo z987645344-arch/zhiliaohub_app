@@ -9,19 +9,28 @@ import java.util.concurrent.TimeUnit
 class ApiClientFactory(
     private val sessionCookieJar: EncryptedSessionCookieJar,
 ) {
+    private val sharedClient = OkHttpClient.Builder()
+        .cookieJar(sessionCookieJar)
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .retryOnConnectionFailure(true)
+        .fastFallback(true)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .callTimeout(20, TimeUnit.SECONDS)
+        .build()
+
     fun create(serverUrl: String): ZhiliaohubApi {
         val address = ServerAddress.parse(serverUrl)
-        val client = OkHttpClient.Builder()
-            .cookieJar(sessionCookieJar)
-            .followRedirects(false)
-            .followSslRedirects(false)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(15, TimeUnit.SECONDS)
-            .callTimeout(20, TimeUnit.SECONDS)
+        val client = sharedClient.newBuilder()
             .addInterceptor(OriginLockingInterceptor(address))
             .build()
         return ZhiliaohubApi(address, client)
+    }
+
+    fun evictAllConnections() {
+        sharedClient.connectionPool.evictAll()
     }
 }
 
@@ -36,4 +45,3 @@ private class OriginLockingInterceptor(
         return chain.proceed(chain.request())
     }
 }
-
