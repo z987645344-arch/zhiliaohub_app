@@ -9,4 +9,4 @@ captures/
 .cxx/
 .env
 .env.*
-!.env.example
+!.env*.example
