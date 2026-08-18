@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-18 补 `.gitignore` 的 `.env` 规则（未打标签）
+
+- 本仓库此前**完全没有任何 env 忽略规则**，连 `.env` 本体都不被忽略——只要在工作区里出现 `.env` 或其备份，`git add .` 就会把它纳入提交。本轮在 `.gitignore` 末尾补入 `.env`、`.env.*`、`!.env.example` 三行，与主站 `zhiliaohub` 同轮对齐；三行均不带路径锚定，因此对任意层级生效（含 `app/.env`）。
+- 起因是主站侧的一次真实暴露：2026-08-16 在服务器改配置时于仓库目录内建了 4 个含真实密钥的 `.env` 备份。排查时用 `git check-ignore` 实测六个仓库，才发现本仓库连基本规则都没有——原记载以为已覆盖。
+- 实测口径以 `git check-ignore` 与真实文件为准，不靠读 `.gitignore` 推断：改后 `.env`、`.env.bak-1`、`.env.local`、`app/.env` 均被忽略；`.env.example` 用新建未跟踪探针文件确认仍会进入未跟踪列表（`git check-ignore -v` 匹配否定规则时也返回 0，退出码会误导），探针已清理。
+- 本仓库当前没有任何已跟踪的 `.env*` 文件，本轮改动不影响任何现有文件；不改代码、不改构建配置、不打标签。
+
 ## Git标签 v0.3 - 2026-08-14
 
 - 将 `versionCode` 从3递增为4，`versionName` 从 `0.2.0` 更新为 `0.3.0`；本轮以 `v0.3` 标签存档并推送到 [GitHub仓库](https://github.com/z987645344-arch/zhiliaohub_app)。
