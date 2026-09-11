@@ -1,10 +1,12 @@
 package com.zhiliaohub.app.ui
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Base64
 import android.view.View
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -17,7 +19,9 @@ import com.zhiliaohub.app.R
 import com.zhiliaohub.app.ZhiliaohubApplication
 import com.zhiliaohub.app.databinding.ActivityMainBinding
 import com.zhiliaohub.app.network.ApiResult
+import com.zhiliaohub.app.network.BackupStatus
 import com.zhiliaohub.app.network.Challenge
+import com.zhiliaohub.app.network.ProjectBackupStatus
 import com.zhiliaohub.app.network.ZhiliaohubApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,8 +41,10 @@ class MainActivity : AppCompatActivity() {
 
     private var authJob: Job? = null
     private var healthJob: Job? = null
+    private var backupStatusJob: Job? = null
     private var activeApi: ZhiliaohubApi? = null
     private var pendingChallenge: Challenge? = null
+    private var backupCardState = BackupStatusCardState()
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         beginAuthentication()
@@ -65,6 +71,7 @@ class MainActivity : AppCompatActivity() {
         binding.retryAuthButton.setOnClickListener { beginAuthentication() }
         binding.pairButton.setOnClickListener { openPairing(resetExisting = true) }
         binding.refreshHealthButton.setOnClickListener { checkHealth() }
+        binding.refreshBackupStatusButton.setOnClickListener { checkBackupStatus() }
 
         beginAuthentication()
     }
@@ -72,12 +79,14 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         authJob?.cancel()
         healthJob?.cancel()
+        backupStatusJob?.cancel()
         super.onDestroy()
     }
 
     private fun beginAuthentication() {
         authJob?.cancel()
         healthJob?.cancel()
+        backupStatusJob?.cancel()
         pendingChallenge = null
         showAuthLoading("正在检查本地配对与会话…")
         authJob = lifecycleScope.launch {
@@ -288,6 +297,7 @@ class MainActivity : AppCompatActivity() {
         binding.monitorContainer.visibility = View.VISIBLE
         activeApi = api
         checkHealth()
+        checkBackupStatus()
     }
 
     private fun checkHealth() {
@@ -338,6 +348,92 @@ class MainActivity : AppCompatActivity() {
     private fun markHealthOffline() {
         binding.healthStatus.text = "离线"
         binding.healthStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
+    }
+
+    private fun checkBackupStatus() {
+        val api = activeApi ?: return
+        backupStatusJob?.cancel()
+        binding.refreshBackupStatusButton.isEnabled = false
+        binding.backupFetchStatus.visibility = View.VISIBLE
+        binding.backupFetchStatus.text = "正在获取备份状态…"
+        binding.backupFetchStatus.setTextColor(ContextCompat.getColor(this, R.color.steel_blue_dark))
+        backupStatusJob = lifecycleScope.launch {
+            when (val result = api.backupStatus()) {
+                is ApiResult.Success -> {
+                    backupCardState = backupCardState.loaded(result.value)
+                    renderBackupStatus(result.value)
+                    binding.backupFetchStatus.visibility = View.GONE
+                }
+                is ApiResult.HttpFailure -> {
+                    if (result.statusCode == 401) {
+                        beginAuthentication()
+                        return@launch
+                    }
+                    showBackupStatusUnavailable(
+                        "取不到备份状态（HTTP ${result.statusCode}）：${result.message}",
+                    )
+                }
+                is ApiResult.NetworkFailure -> showBackupStatusUnavailable(
+                    "取不到备份状态：${networkMessage(result.exception, result.automaticRetryCount)}",
+                )
+                is ApiResult.ProtocolFailure -> showBackupStatusUnavailable(
+                    "取不到备份状态：${result.message}",
+                )
+            }
+            binding.refreshBackupStatusButton.isEnabled = true
+        }
+    }
+
+    private fun renderBackupStatus(status: BackupStatus) {
+        renderBackupStatusRow(
+            status.zhiliaohub,
+            binding.hubBackupRow,
+            binding.hubBackupStatus,
+            binding.hubBackupHint,
+        )
+        renderBackupStatusRow(
+            status.zhitian,
+            binding.zhitianBackupRow,
+            binding.zhitianBackupStatus,
+            binding.zhitianBackupHint,
+        )
+    }
+
+    private fun renderBackupStatusRow(
+        status: ProjectBackupStatus,
+        row: View,
+        statusView: TextView,
+        hintView: TextView,
+    ) {
+        val presentation = status.status.toPresentation()
+        val textColor = when (presentation.tone) {
+            BackupStatusTone.DANGER -> R.color.danger
+            BackupStatusTone.LOW_KEY,
+            BackupStatusTone.NEUTRAL
+            -> R.color.steel_blue_dark
+        }
+        statusView.text = presentation.label
+        statusView.setTextColor(ContextCompat.getColor(this, textColor))
+        hintView.text = status.hint
+        hintView.setTextColor(ContextCompat.getColor(this, textColor))
+        row.setBackgroundColor(
+            if (presentation.tone == BackupStatusTone.DANGER) {
+                ContextCompat.getColor(this, R.color.warning_background)
+            } else {
+                Color.TRANSPARENT
+            },
+        )
+    }
+
+    private fun showBackupStatusUnavailable(message: String) {
+        backupCardState = backupCardState.unavailable(message)
+        binding.backupFetchStatus.visibility = View.VISIBLE
+        binding.backupFetchStatus.text = if (backupCardState.latest == null) {
+            message
+        } else {
+            "取不到最新状态，已保留上次结果。\n$message"
+        }
+        binding.backupFetchStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
     }
 
     private fun showAuthLoading(message: String) {

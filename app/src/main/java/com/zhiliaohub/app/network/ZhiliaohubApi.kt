@@ -81,6 +81,17 @@ class ZhiliaohubApi internal constructor(
         HealthStatus(isOnline = status == "ok", serverStatus = status)
     }
 
+    suspend fun backupStatus(): ApiResult<BackupStatus> = execute(
+        Request.Builder().url(url("/api/admin/backup-status")).get().build(),
+        ApiOperation.BACKUP_STATUS,
+    ) { body ->
+        val root = JSONObject(body)
+        BackupStatus(
+            zhiliaohub = parseProjectBackupStatus(root.getJSONObject("zhiliaohub")),
+            zhitian = parseProjectBackupStatus(root.getJSONObject("zhitian")),
+        )
+    }
+
     private fun jsonPost(path: String, payload: JSONObject): Request = Request.Builder()
         .url(url(path))
         .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
@@ -131,6 +142,11 @@ class ZhiliaohubApi internal constructor(
         }
         return httpFailureMessage(statusCode, serverDetail)
     }
+
+    private fun parseProjectBackupStatus(root: JSONObject): ProjectBackupStatus = ProjectBackupStatus(
+        status = BackupState.fromWireValue(root.getString("status")),
+        hint = root.getString("hint").also { require(it.isNotBlank()) { "备份状态提示不能为空。" } },
+    )
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()

@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-11 主界面新增两项目备份状态卡片（未打标签）
+
+- **本轮行为**：主界面预留位改为一张两行备份状态卡片，分别显示知了hub与知天的服务端 `status + hint`；两行独立渲染，知天 `unreachable` 不影响知了hub。`stale`、`unknown`、`unreachable` 使用显眼危险样式，`ok` 低调、`disabled` 中性；刷新行为与健康卡一致。
+- **认证与失败边界**：新增的 `GET /api/admin/backup-status` 复用现有 Cookie、`execute()` 和只读请求 500ms/1.5s 退避；认证 POST 分类未改。401继续进入既有重新登录流程；整体网络失败显示“取不到”且保留上次两行结果，不崩溃、不清空。
+- **数据克制**：模型只解析两侧的 `status` 与 `hint`，不解析、不渲染 `diagnostic`，也不引入文件名、目录路径或归档数量。日期算术仍由服务端完成，App直接显示服务端 `hint`。
+- **验证证据**：`prodDebug`、`qaDebug` 的 JVM 测试均由各16项增至各21项，最终均0失败；五项新增测试覆盖两侧正常、单侧超期、知天不可达、整体网络失败和401，并以含 `diagnostic` 的假响应确认模型没有该字段。两变体 Lint 均0 errors、9 warnings；两变体 Debug APK均实际构建成功。
+- **测试环境说明**：Android JVM 首轮执行时，3项成功响应解析测试因 Android SDK 的 `org.json` stub 失败；本轮仅在 `testImplementation` 增加 Java `org.json` 实现，APK运行时依赖未改变。修正后重新执行了完整双变体测试，而不是跳过解析断言。
+- **未验证**：本轮没有安装真机，未代报 qa 对本地后台、prod 对生产后台的卡片显示；真实设备需分别确认两行状态、刷新、网络失败保留上次结果和401重新登录。没有推送、没有核CI、没有打标签，交由指挥师后续执行。
+- **逐文件改动（本批新增）**：
+  - `app/src/main/java/com/zhiliaohub/app/network/ApiResult.kt`：+23/-0，增加严格状态枚举及两侧响应模型。
+  - `app/src/main/java/com/zhiliaohub/app/network/NetworkRetryPolicy.kt`：+1/-0，把备份状态声明为可退避重试的只读操作。
+  - `app/src/main/java/com/zhiliaohub/app/network/ZhiliaohubApi.kt`：+16/-0，增加认证 GET 与克制解析。
+  - `app/src/main/java/com/zhiliaohub/app/ui/BackupStatusUiState.kt`：+32/-0，集中定义状态文案、视觉语义与保留上次结果的状态容器。
+  - `app/src/main/java/com/zhiliaohub/app/ui/MainActivity.kt`：+96/-0，接入加载、刷新、独立两行渲染及失败降级。
+  - `app/src/main/res/layout/activity_main.xml`：+100/-3，以真实备份卡片替换预留占位。
+  - `app/src/main/res/values/strings.xml`：+7/-2，增加卡片文案并移除旧占位文案。
+  - `app/src/test/java/com/zhiliaohub/app/network/NetworkRetryPolicyTest.kt`：+2/-1，锁住新增只读操作与认证写入分类。
+  - `app/src/test/java/com/zhiliaohub/app/network/BackupStatusTest.kt`：+159/-0，覆盖五种契约与失败场景。
+  - `app/build.gradle.kts`：+1/-0；`gradle/libs.versions.toml`：+2/-1，仅为 JVM 测试加入 `org.json` 实现。
+  - `README.md`：+5/-2；`STATUS.md`：+16/-4，同步接口、功能、验证边界与待真机事项。
+  - `CHANGELOG.md`：+22/-0，记录本条现场证据与逐文件范围。
+
 ## Git标签 v0.3.1 - 2026-08-28
 
 - **覆盖 3 条工作条目、5 个提交**，其中 2 个提交属本轮存档动作本身（补记条目与本条存档条目），**不是 5 件工作**：

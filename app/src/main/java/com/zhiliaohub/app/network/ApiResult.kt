@@ -22,3 +22,26 @@ data class HealthStatus(
     val isOnline: Boolean,
     val serverStatus: String,
 )
+
+enum class BackupState(val wireValue: String) {
+    OK("ok"),
+    STALE("stale"),
+    DISABLED("disabled"),
+    UNKNOWN("unknown"),
+    UNREACHABLE("unreachable");
+
+    companion object {
+        fun fromWireValue(value: String): BackupState = entries.firstOrNull { it.wireValue == value }
+            ?: throw IllegalArgumentException("服务器返回了未知的备份状态。")
+    }
+}
+
+data class ProjectBackupStatus(
+    val status: BackupState,
+    val hint: String,
+)
+
+data class BackupStatus(
+    val zhiliaohub: ProjectBackupStatus,
+    val zhitian: ProjectBackupStatus,
+)

@@ -1,10 +1,10 @@
 # 知了hub 管理助手（Android）
 
-知了hub 管理助手是 `zhiliaohub` 管理后台的配套原生 Android App。当前仓库存档版本为 `v0.3`，APK `versionName` 为 `0.3.0`。当前功能聚焦单设备安全配对、持久会话、P-256 挑战应答登录和一个真实的网站健康状态卡片，不包含内容编辑、二维码扫描或尚无服务端接口的监控数据。
+知了hub 管理助手是 `zhiliaohub` 管理后台的配套原生 Android App。当前最新Git标签为 `v0.3.1`，APK `versionName` 仍为 `0.3.0`。当前功能聚焦单设备安全配对、持久会话、P-256 挑战应答登录，以及网站健康和两项目备份状态两张真实卡片；不包含内容编辑、二维码扫描或虚构的监控数据。
 
 本仓库与主站仓库相互独立。App 只对接服务端公开接口；服务端配套改动仍在独立的 `zhiliaohub` 仓库维护。
 
-兼容性：依赖 `zhiliaohub admin-server v1.2+` 提供的设备认证接口。
+兼容性：设备认证依赖 `zhiliaohub admin-server v1.2+`；备份状态卡片依赖 `v3.5+` 提供的认证聚合接口。
 
 ## 构建要求
 
@@ -105,6 +105,7 @@ USB 调试场景仍可使用 `adb reverse tcp:3001 tcp:3001` 和 `http://localho
 | `POST /api/device-auth/login` | 提交 DER/Base64 ECDSA 签名并取得 session Cookie |
 | `GET /api/admin/device` | 使用现有 Cookie 探测管理员设备会话是否仍有效 |
 | `GET /health` | 显示真实的“在线/离线”和最近检查时间 |
+| `GET /api/admin/backup-status` | 在已认证通道读取知了hub与知天各自的状态词和服务端提示；不解析 `diagnostic` |
 
 服务端将“配对码错误、过期或已使用”统一返回为同一个 `401`，App 无法可靠区分这三种服务端原因，因此会如实显示组合提示；本地格式错误和服务器不可达则分别提示。
 
@@ -143,5 +144,7 @@ app/src/qa/res/
 ## 当前验证状态
 
 2026-08-14 已完成两个Debug变体的编译、各16项JVM测试和Lint（0 errors），并在Vivo V2405A（Android 15 / API 35）上并行安装。测试版通过独立UID在本地后台完成配对、生物识别登录和健康状态“在线”；正式版覆盖安装保留原生产设置和本地凭据，重启后现有生产会话免生物识别恢复且健康状态“在线”，但过程中观察到一次可恢复的瞬时网络失败。本轮没有清除正式版生产凭据重新配对。此前局域网、USB端到端及覆盖安装验证记录详见 [STATUS.md](STATUS.md)。
+
+2026-09-11 在本机完成备份状态卡片的双变体验证：`prodDebug`、`qaDebug` 各21项JVM测试均0失败，Lint均0 errors。假响应覆盖两侧正常、单侧超期、知天不可达、整体网络失败和401；网络失败保留上次两行结果，401回到既有重新登录流程，模型不包含 `diagnostic`。本轮未安装真机，qa连接本地后台与prod连接生产环境的显示结果仍须由用户实际确认。
 
 仓库使用 [GitHub Actions](https://github.com/z987645344-arch/zhiliaohub_app/actions) 在 push 或 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；CI 不运行模拟器或替代人工真机验证。

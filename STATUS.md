@@ -1,10 +1,10 @@
 # 项目状态
 
-> 最后更新：2026-08-14
+> 最后更新：2026-09-11
 
 ## 当前进度
 
-Android App 当前正式存档版本为 `v0.3`，APK 内部 `versionName` 为 `0.3.0`、`versionCode` 为4。本版本包含 `prod`/`qa` 双Product Flavor和网络切换容错：正式版包名保持 `com.zhiliaohub.app`，测试版使用 `com.zhiliaohub.app.test`，二者共用同一份源码并可在一台手机并行安装。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
+Android App 当前最新Git标签为 `v0.3.1`，APK 内部 `versionName` 为 `0.3.0`、`versionCode` 为4。本版本包含 `prod`/`qa` 双Product Flavor和网络切换容错：正式版包名保持 `com.zhiliaohub.app`，测试版使用 `com.zhiliaohub.app.test`，二者共用同一份源码并可在一台手机并行安装。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
 
 CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint。[CI #2](https://github.com/z987645344-arch/zhiliaohub_app/actions/runs/31090840332) 已在修正 runner 的 `sdkmanager` PATH 差异后真实运行成功；首次失败记录仍保留在 Actions 历史中。
 
@@ -31,9 +31,21 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 - Keystore AES-GCM 加密 session Cookie 持久化。
 - 启动时优先探测 Cookie 会话；失效后才进入生物识别挑战登录。
 - 设备吊销后的明确提示、凭据清理与重新配对入口。
-- `/health` 在线/离线状态和最近检查时间；仅预留未来卡片位置，不生成虚假指标。
+- `/health` 在线/离线状态和最近检查时间；已认证的备份状态卡片分别显示知了hub与知天的服务端状态词和提示，不在App重算日期，也不解析或渲染 `diagnostic`。
 
 ## 已验证
+
+### 备份状态卡片（2026-09-11，本机自动化）
+
+| 检查项 | 真实结果 |
+|---|---|
+| API与重试 | `GET /api/admin/backup-status` 复用现有Cookie、`execute()`与只读请求500ms/1.5s退避；认证POST分类未改 |
+| 假响应 | 两侧正常、单侧超期、知天不可达、整体网络失败、401共5种场景均有JVM测试；含 `diagnostic` 的响应不会进入模型 |
+| 独立显示 | 知天为 `unreachable` 时知了hub仍保持 `ok`；`stale / unknown / unreachable` 使用显眼危险样式，`disabled`中性、`ok`低调 |
+| 失败降级 | 网络失败整卡显示“取不到”，已有两行结果保留；401沿用既有重新登录流程 |
+| JVM测试 | `prodDebug`、`qaDebug` 从各16项增至各21项，均0失败 |
+| Android Lint | 两个变体均0 errors、9 warnings；警告为既有工具/依赖版本、开发期明文配置和未使用 `app_name`，没有本轮新增错误 |
+| 真机边界 | 本轮未安装真机；qa对本地后台、prod对生产环境的卡片仍待用户实际查看，不能以本机测试代报通过 |
 
 ### 双构建变体与真机并行安装（2026-08-14）
 
@@ -133,5 +145,5 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 
 1. 正式部署后切换 HTTPS，复核证书链、域名与代理行为。
 2. 补测生物识别取消/锁定/重新录入、限流和挑战过期分支。
-3. 后续按真实接口增加备份状态、反馈提醒等监控卡片。
+3. 在真机分别用qa连接本地后台、prod连接生产环境，确认备份状态两行、刷新、网络失败保留及401重新登录的实际显示。
 4. 仅在产品明确需要时增加二维码扫描配对；当前继续保持手动输入。

@@ -16,8 +16,13 @@
     <string name="not_checked">尚未检查</string>
     <string name="last_checked_empty">最近检查：—</string>
     <string name="check_now">立即检查</string>
-    <string name="future_cards_title">后续监控卡片</string>
-    <string name="future_cards_description">这里仅预留扩展位置。本版本不展示备份状态、反馈提醒或任何尚无接口的数据。</string>
+    <string name="backup_card_title">备份状态</string>
+    <string name="backup_not_checked">尚未获取备份状态</string>
+    <string name="backup_hub_label">知了hub</string>
+    <string name="backup_zhitian_label">知天</string>
+    <string name="backup_status_empty">—</string>
+    <string name="backup_hint_empty">等待首次获取</string>
+    <string name="refresh_backup_status">刷新备份状态</string>
     <string name="pairing_description">先用密码 + TOTP 登录网页后台，在设备管理页生成一次性配对码。私钥将在 Android Keystore 内生成且不可导出。</string>
     <string name="device_name_hint">设备名称</string>
     <string name="pairing_code_hint">XXXXX-XXXXX</string>

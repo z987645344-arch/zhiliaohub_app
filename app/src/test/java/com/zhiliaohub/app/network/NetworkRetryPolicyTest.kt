@@ -90,9 +90,10 @@ class NetworkRetryPolicyTest {
     }
 
     @Test
-    fun apiOperationsClassifyOnlySessionAndHealthAsReadOnly() {
+    fun apiOperationsClassifyReadOnlyQueriesAndAuthenticationWrites() {
         assertEquals(RequestSafety.READ_ONLY, ApiOperation.CHECK_SESSION.requestSafety)
         assertEquals(RequestSafety.READ_ONLY, ApiOperation.HEALTH.requestSafety)
+        assertEquals(RequestSafety.READ_ONLY, ApiOperation.BACKUP_STATUS.requestSafety)
         assertEquals(RequestSafety.AUTHENTICATION_WRITE, ApiOperation.PAIR_DEVICE.requestSafety)
         assertEquals(RequestSafety.AUTHENTICATION_WRITE, ApiOperation.REQUEST_CHALLENGE.requestSafety)
         assertEquals(RequestSafety.AUTHENTICATION_WRITE, ApiOperation.LOGIN.requestSafety)

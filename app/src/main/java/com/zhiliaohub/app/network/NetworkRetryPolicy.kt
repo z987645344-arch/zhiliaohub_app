@@ -16,6 +16,7 @@ internal enum class RequestSafety {
 internal enum class ApiOperation(val requestSafety: RequestSafety) {
     CHECK_SESSION(RequestSafety.READ_ONLY),
     HEALTH(RequestSafety.READ_ONLY),
+    BACKUP_STATUS(RequestSafety.READ_ONLY),
     PAIR_DEVICE(RequestSafety.AUTHENTICATION_WRITE),
     REQUEST_CHALLENGE(RequestSafety.AUTHENTICATION_WRITE),
     LOGIN(RequestSafety.AUTHENTICATION_WRITE),
