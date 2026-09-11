@@ -54,6 +54,9 @@ class MainActivity : AppCompatActivity() {
     private var pendingTotpAction: TotpBiometricAction? = null
     private var backupCardState = BackupStatusCardState()
     private val totpDisplayGate = TotpDisplayGate()
+    private val biometricPromptCoordinator = BiometricPromptCoordinator()
+    private var isTotpBound = false
+    private var showingLoginBiometricBusyMessage = false
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         beginAuthentication()
@@ -198,12 +201,35 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        when (val decision = biometricPromptCoordinator.tryStart(BiometricPromptPurpose.LOGIN_SIGNATURE)) {
+            BiometricPromptStartDecision.Started -> updateBiometricControls()
+            is BiometricPromptStartDecision.Busy -> {
+                showAuthError(
+                    biometricPromptBusyMessage(
+                        BiometricPromptPurpose.LOGIN_SIGNATURE,
+                        decision.activePurpose,
+                    ),
+                    canRetry = true,
+                    canPair = false,
+                )
+                return
+            }
+        }
+
         val signature = try {
             app.deviceKeyManager.createBiometricSignature()
         } catch (_: KeyPermanentlyInvalidatedException) {
+            finishBiometricPrompt(
+                BiometricPromptPurpose.LOGIN_SIGNATURE,
+                BiometricPromptTerminalState.FAILED,
+            )
             lifecycleScope.launch { handleInvalidatedKey() }
             return
         } catch (_: Exception) {
+            finishBiometricPrompt(
+                BiometricPromptPurpose.LOGIN_SIGNATURE,
+                BiometricPromptTerminalState.FAILED,
+            )
             showAuthError("无法访问设备签名密钥，需要重新配对。", canRetry = false, canPair = true)
             return
         }
@@ -217,16 +243,33 @@ class MainActivity : AppCompatActivity() {
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .setNegativeButtonText("取消")
             .build()
-        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(signature))
+        try {
+            biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(signature))
+        } catch (_: Exception) {
+            pendingChallenge = null
+            finishBiometricPrompt(
+                BiometricPromptPurpose.LOGIN_SIGNATURE,
+                BiometricPromptTerminalState.FAILED,
+            )
+            showAuthError("无法启动登录身份验证，请重试。", canRetry = true, canPair = false)
+        }
     }
 
     private val biometricCallback = object : BiometricPrompt.AuthenticationCallback() {
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
             super.onAuthenticationSucceeded(result)
-            val challenge = pendingChallenge
+            finishBiometricPrompt(
+                BiometricPromptPurpose.LOGIN_SIGNATURE,
+                BiometricPromptTerminalState.SUCCEEDED,
+            )
+            val challenge = pendingChallenge.also { pendingChallenge = null }
             val signature = result.cryptoObject?.signature
             if (challenge == null || signature == null) {
-                showAuthError("生物识别成功，但未取得可用签名上下文，请重试。", true, false)
+                showAuthError(
+                    "生物识别成功，但登录签名上下文已被系统打断，请重试；设备密钥未被判定失效。",
+                    true,
+                    false,
+                )
                 return
             }
             val signatureBase64 = try {
@@ -240,7 +283,14 @@ class MainActivity : AppCompatActivity() {
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             super.onAuthenticationError(errorCode, errString)
-            showAuthError("生物识别未完成：$errString", canRetry = true, canPair = false)
+            pendingChallenge = null
+            val terminalState = biometricTerminalState(errorCode)
+            finishBiometricPrompt(BiometricPromptPurpose.LOGIN_SIGNATURE, terminalState)
+            showAuthError(
+                biometricPromptTerminalMessage(terminalState, errString),
+                canRetry = true,
+                canPair = false,
+            )
         }
 
         override fun onAuthenticationFailed() {
@@ -536,6 +586,18 @@ class MainActivity : AppCompatActivity() {
             showTotpMessage("强生物识别不可用，不能显示或清除本机 TOTP 密钥。", isError = true)
             return
         }
+
+        when (val decision = biometricPromptCoordinator.tryStart(BiometricPromptPurpose.TOTP)) {
+            BiometricPromptStartDecision.Started -> updateBiometricControls()
+            is BiometricPromptStartDecision.Busy -> {
+                showTotpMessage(
+                    biometricPromptBusyMessage(BiometricPromptPurpose.TOTP, decision.activePurpose),
+                    isError = true,
+                    tracksActiveLogin = decision.activePurpose == BiometricPromptPurpose.LOGIN_SIGNATURE,
+                )
+                return
+            }
+        }
         pendingTotpAction = action
         val title = when (action) {
             TotpBiometricAction.SHOW_CODE -> "显示后台动态验证码"
@@ -551,23 +613,41 @@ class MainActivity : AppCompatActivity() {
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
             .setNegativeButtonText("取消")
             .build()
-        totpBiometricPrompt.authenticate(promptInfo)
+        try {
+            totpBiometricPrompt.authenticate(promptInfo)
+        } catch (_: Exception) {
+            pendingTotpAction = null
+            finishBiometricPrompt(BiometricPromptPurpose.TOTP, BiometricPromptTerminalState.FAILED)
+            showTotpMessage("无法启动 TOTP 身份验证，请重试。", isError = true)
+        }
     }
 
     private val totpBiometricCallback = object : BiometricPrompt.AuthenticationCallback() {
         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
             super.onAuthenticationSucceeded(result)
+            finishBiometricPrompt(
+                BiometricPromptPurpose.TOTP,
+                BiometricPromptTerminalState.SUCCEEDED,
+            )
             when (pendingTotpAction.also { pendingTotpAction = null }) {
                 TotpBiometricAction.SHOW_CODE -> startTotpDisplay()
                 TotpBiometricAction.UNBIND -> clearTotpBinding()
-                null -> showTotpMessage("生物识别上下文已失效，请重试。", isError = true)
+                null -> showTotpMessage(
+                    "TOTP 身份验证被系统或其他验证流程打断，请重试；本机密钥未被判定失效。",
+                    isError = true,
+                )
             }
         }
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             super.onAuthenticationError(errorCode, errString)
             pendingTotpAction = null
-            showTotpMessage("生物识别未完成：$errString", isError = true)
+            val terminalState = biometricTerminalState(errorCode)
+            finishBiometricPrompt(BiometricPromptPurpose.TOTP, terminalState)
+            showTotpMessage(
+                biometricPromptTerminalMessage(terminalState, errString),
+                isError = true,
+            )
         }
 
         override fun onAuthenticationFailed() {
@@ -638,6 +718,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderTotpBinding(isBound: Boolean) {
+        isTotpBound = isBound
         binding.totpBindingStatus.text = getString(if (isBound) R.string.totp_bound else R.string.totp_not_bound)
         binding.totpBindingStatus.setTextColor(
             ContextCompat.getColor(this, if (isBound) R.color.success else R.color.steel_blue_dark),
@@ -646,14 +727,60 @@ class MainActivity : AppCompatActivity() {
         binding.showTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
         binding.unbindTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
         if (!isBound) hideTotpCode()
+        updateBiometricControls()
     }
 
-    private fun showTotpMessage(message: String, isError: Boolean = false) {
+    private fun showTotpMessage(
+        message: String,
+        isError: Boolean = false,
+        tracksActiveLogin: Boolean = false,
+    ) {
+        showingLoginBiometricBusyMessage = tracksActiveLogin
         binding.totpMessage.visibility = View.VISIBLE
         binding.totpMessage.text = message
         binding.totpMessage.setTextColor(
             ContextCompat.getColor(this, if (isError) R.color.danger else R.color.steel_blue_dark),
         )
+    }
+
+    private fun finishBiometricPrompt(
+        purpose: BiometricPromptPurpose,
+        terminalState: BiometricPromptTerminalState,
+    ): Boolean {
+        val released = biometricPromptCoordinator.finish(purpose, terminalState)
+        if (released) updateBiometricControls()
+        return released
+    }
+
+    private fun updateBiometricControls() {
+        val canStartPrompt = biometricPromptCoordinator.canStartPrompt
+        binding.bindTotpButton.isEnabled = canStartPrompt
+        binding.showTotpButton.isEnabled = canStartPrompt
+        binding.unbindTotpButton.isEnabled = canStartPrompt
+
+        if (biometricPromptCoordinator.activePurpose == BiometricPromptPurpose.LOGIN_SIGNATURE) {
+            showTotpMessage(
+                "登录身份验证正在进行，请先完成当前的身份验证。",
+                tracksActiveLogin = true,
+            )
+        } else if (showingLoginBiometricBusyMessage) {
+            showingLoginBiometricBusyMessage = false
+            binding.totpMessage.visibility = View.GONE
+        }
+
+        if (!isTotpBound) {
+            binding.showTotpButton.isEnabled = false
+            binding.unbindTotpButton.isEnabled = false
+        }
+    }
+
+    private fun biometricTerminalState(errorCode: Int): BiometricPromptTerminalState = when (errorCode) {
+        BiometricPrompt.ERROR_USER_CANCELED,
+        BiometricPrompt.ERROR_NEGATIVE_BUTTON,
+        -> BiometricPromptTerminalState.CANCELED
+
+        BiometricPrompt.ERROR_CANCELED -> BiometricPromptTerminalState.INTERRUPTED
+        else -> BiometricPromptTerminalState.FAILED
     }
 
     private fun showAuthLoading(message: String) {

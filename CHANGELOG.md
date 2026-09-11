@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-11 修复登录签名与TOTP生物识别提示互相取消（未打标签）
+
+- **阻塞缺陷与判断纠正**：v0.5 真机联调发现设备配对虽成功，设备登录却始终无法完成；登录签名与TOTP各自持有一个 `BiometricPrompt`，后发起者会取消先前提示。指挥师此前把该问题判断为“不阻塞、下轮再修”，事实证明判断错误，本条保留这次优先级误判。
+- **互斥而不合并**：新增共享协调器，在调用 `authenticate()` 前占用；登录签名在飞时，TOTP绑定、显示与解绑按钮禁用并明确提示“请先完成当前的身份验证”；TOTP在飞时，自动登录不会顶掉它，而是显示可重试的忙状态。登录仍使用带 `CryptoObject(signature)` 的Prompt，TOTP仍使用不带CryptoObject的Prompt，密钥用途边界未合并。
+- **释放与错误语义**：成功及终态错误/取消均释放互斥；Android `onAuthenticationFailed` 只是一次未识别、Prompt仍在，因此刻意不释放。系统或其他验证流程打断时明确说明“本机密钥未被判定失效”，不再复用“上下文已失效/需要重新绑定”；真正的 `KeyPermanentlyInvalidatedException` 仍走既有重新配对提示。
+- **协议边界**：未修改配对、挑战应答、签名算法、登录请求、会话持久化、TOTP密钥存储或RFC 6238实现；`versionCode=6`、`versionName=0.5.0`未改。
+- **自动化证据**：两个Flavor的JVM测试均由32项增至37项，最终37/37、0失败；新增5项锁住双向忙状态不会启动第二个Prompt、四种终态均释放、迟到回调不能释放另一Prompt，以及打断文案不误报密钥失效。两个Flavor Lint均0 errors、7 warnings；两个Debug APK均构建成功。
+- **未验证**：没有代报真机通过。用户仍需在本地通过 `adb reverse localhost:3001` 完成一次设备登录，确认签名走完、两张备份状态行出现，并确认登录Prompt期间操作TOTP不会打断登录。
+- **逐文件改动（本批新增）**：
+  - `app/src/main/java/com/zhiliaohub/app/ui/BiometricPromptCoordinator.kt`：+80/-0，共享互斥状态、终态与明确提示。
+  - `app/src/main/java/com/zhiliaohub/app/ui/MainActivity.kt`：+135/-8，在两个Prompt发起点接入互斥、按钮状态与终态释放。
+  - `app/src/test/java/com/zhiliaohub/app/ui/BiometricPromptCoordinatorTest.kt`：+102/-0，覆盖双向竞争、终态释放与错误语义。
+  - `CHANGELOG.md`：+14/-0，记录本条现场证据、判断纠正与验证边界。
+
 ## 2026-09-11 新增本机TOTP卡片并补齐会话刷新复核（未打标签）
 
 - **本机TOTP**：新增手输Base32绑定、6位码与30秒倒计时、强生物识别显示门和本机解绑。绑定成功后立即要求生物识别并显示一次验证码，供用户与腾讯验证器当场核对；退到后台即隐藏。TOTP是纯本机能力，服务器会话或网络不可用时卡片仍可进入，不新增后端接口、相机权限或出站请求。
