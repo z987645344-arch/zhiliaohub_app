@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private var activeApi: ZhiliaohubApi? = null
     private var pendingChallenge: Challenge? = null
     private var pendingTotpAction: TotpBiometricAction? = null
+    private var currentTotpCode: String? = null
     private var backupCardState = BackupStatusCardState()
     private val totpDisplayGate = TotpDisplayGate()
     private val biometricPromptCoordinator = BiometricPromptCoordinator()
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         binding.refreshBackupStatusButton.setOnClickListener { checkBackupStatus() }
         binding.bindTotpButton.setOnClickListener { bindTotpSecret() }
         binding.showTotpButton.setOnClickListener { promptForTotp(TotpBiometricAction.SHOW_CODE) }
+        binding.toggleTotpCodeButton.setOnClickListener { toggleTotpCodeMask() }
         binding.unbindTotpButton.setOnClickListener { confirmTotpUnbind() }
 
         refreshTotpBindingState()
@@ -673,20 +675,21 @@ class MainActivity : AppCompatActivity() {
     private fun startTotpDisplay() {
         hideTotpCode()
         totpDisplayGate.unlock()
+        renderTotpCode()
+        updateBiometricControls()
         totpDisplayJob = lifecycleScope.launch {
             var displayedWindow = -1L
-            var currentCode: String? = null
             while (isActive && totpDisplayGate.isUnlocked) {
                 val nowMillis = System.currentTimeMillis()
                 val nowSeconds = nowMillis / 1_000L
                 val window = nowSeconds / TotpGenerator.PERIOD_SECONDS
                 if (window != displayedWindow) {
-                    currentCode = try {
+                    currentTotpCode = try {
                         withContext(Dispatchers.IO) { app.totpSecretStore.codeAt(nowSeconds) }
                     } catch (_: Exception) {
                         null
                     }
-                    if (currentCode == null) {
+                    if (currentTotpCode == null) {
                         hideTotpCode()
                         renderTotpBinding(false)
                         showTotpMessage("本机 TOTP 密钥不可用，请重新绑定。", isError = true)
@@ -694,9 +697,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     displayedWindow = window
                 }
-                binding.totpCode.text = currentCode
-                    ?.let(totpDisplayGate::visibleCode)
-                    ?: getString(R.string.totp_code_hidden)
+                renderTotpCode()
                 binding.totpCountdown.text = getString(
                     R.string.totp_seconds_remaining,
                     TotpGenerator.remainingSeconds(nowSeconds),
@@ -707,13 +708,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun toggleTotpCodeMask() {
+        if (!totpDisplayGate.toggleMask()) return
+        renderTotpCode()
+        updateBiometricControls()
+    }
+
+    private fun renderTotpCode() {
+        binding.totpCode.text = currentTotpCode
+            ?.let(totpDisplayGate::visibleCode)
+            ?: getString(R.string.totp_code_hidden)
+        binding.toggleTotpCodeButton.text = getString(
+            if (totpDisplayGate.isMasked) R.string.totp_show_digits else R.string.totp_hide_digits,
+        )
+    }
+
     private fun hideTotpCode() {
         totpDisplayGate.lock()
+        currentTotpCode = null
         totpDisplayJob?.cancel()
         totpDisplayJob = null
         if (::binding.isInitialized) {
-            binding.totpCode.text = getString(R.string.totp_code_hidden)
+            renderTotpCode()
             binding.totpCountdown.text = getString(R.string.totp_auth_required)
+            updateBiometricControls()
         }
     }
 
@@ -739,6 +757,7 @@ class MainActivity : AppCompatActivity() {
         )
         binding.totpBindContainer.visibility = if (isBound) View.GONE else View.VISIBLE
         binding.showTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
+        binding.toggleTotpCodeButton.visibility = if (isBound) View.VISIBLE else View.GONE
         binding.unbindTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
         if (!isBound) hideTotpCode()
         updateBiometricControls()
@@ -803,6 +822,7 @@ class MainActivity : AppCompatActivity() {
         val canStartPrompt = biometricPromptCoordinator.canStartPrompt
         binding.bindTotpButton.isEnabled = canStartPrompt
         binding.showTotpButton.isEnabled = canStartPrompt
+        binding.toggleTotpCodeButton.isEnabled = canStartPrompt && totpDisplayGate.isUnlocked
         binding.unbindTotpButton.isEnabled = canStartPrompt
 
         if (biometricPromptCoordinator.activePurpose == BiometricPromptPurpose.LOGIN_SIGNATURE) {
@@ -817,6 +837,7 @@ class MainActivity : AppCompatActivity() {
 
         if (!isTotpBound) {
             binding.showTotpButton.isEnabled = false
+            binding.toggleTotpCodeButton.isEnabled = false
             binding.unbindTotpButton.isEnabled = false
         }
     }

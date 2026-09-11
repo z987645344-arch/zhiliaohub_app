@@ -10,18 +10,59 @@ import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TotpUiStateTest {
     @Test
-    fun codeIsInvisibleUntilBiometricGateUnlocksAndHiddenAgainAfterLock() {
+    fun maskToggleHasNoEffectBeforeBiometricGateUnlocks() {
         val gate = TotpDisplayGate()
 
+        assertFalse(gate.toggleMask())
+        assertFalse(gate.isUnlocked)
+        assertFalse(gate.isMasked)
         assertNull(gate.visibleCode("123456"))
+    }
+
+    @Test
+    fun biometricUnlockStartsWithCodeVisible() {
+        val gate = TotpDisplayGate()
+
         gate.unlock()
+
+        assertTrue(gate.isUnlocked)
+        assertFalse(gate.isMasked)
         assertEquals("123456", gate.visibleCode("123456"))
+    }
+
+    @Test
+    fun maskToggleDoesNotLockGateAndUnmaskShowsCurrentWindowCode() {
+        val gate = TotpDisplayGate()
+        gate.unlock()
+
+        assertTrue(gate.toggleMask())
+        assertTrue(gate.isUnlocked)
+        assertTrue(gate.isMasked)
+        assertNull(gate.visibleCode("123456"))
+
+        assertTrue(gate.toggleMask())
+        assertTrue(gate.isUnlocked)
+        assertFalse(gate.isMasked)
+        assertEquals("654321", gate.visibleCode("654321"))
+    }
+
+    @Test
+    fun lockResetsBothBiometricAndMaskAxes() {
+        val gate = TotpDisplayGate()
+        gate.unlock()
+        gate.toggleMask()
+
         gate.lock()
+
+        assertFalse(gate.isUnlocked)
+        assertFalse(gate.isMasked)
         assertNull(gate.visibleCode("123456"))
     }
 

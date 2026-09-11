@@ -10,16 +10,26 @@ internal enum class TotpBiometricAction {
 internal class TotpDisplayGate {
     var isUnlocked: Boolean = false
         private set
+    var isMasked: Boolean = false
+        private set
 
     fun unlock() {
         isUnlocked = true
+        isMasked = false
+    }
+
+    fun toggleMask(): Boolean {
+        if (!isUnlocked) return false
+        isMasked = !isMasked
+        return true
     }
 
     fun lock() {
         isUnlocked = false
+        isMasked = false
     }
 
-    fun visibleCode(code: String): String? = code.takeIf { isUnlocked }
+    fun visibleCode(code: String): String? = code.takeIf { isUnlocked && !isMasked }
 }
 
 internal enum class SessionRefreshDecision {

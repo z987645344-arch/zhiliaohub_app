@@ -34,6 +34,8 @@
     <string name="totp_secret_hint">Base32 密钥</string>
     <string name="totp_bind">绑定并核对验证码</string>
     <string name="totp_show_code">生物识别后显示</string>
+    <string name="totp_hide_digits">隐藏验证码</string>
+    <string name="totp_show_digits">显示验证码</string>
     <string name="totp_unbind">解除本机绑定</string>
     <string name="totp_unbind_warning">解绑只会清除本机密钥，不影响后台，也不影响腾讯验证器。继续操作需要生物识别确认。</string>
     <string name="totp_seconds_remaining">剩余 %1$d 秒</string>

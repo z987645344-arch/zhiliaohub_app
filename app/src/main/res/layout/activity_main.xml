@@ -379,6 +379,15 @@
                     android:visibility="gone" />
 
                 <Button
+                    android:id="@+id/toggleTotpCodeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:enabled="false"
+                    android:text="@string/totp_hide_digits"
+                    android:visibility="gone" />
+
+                <Button
                     android:id="@+id/unbindTotpButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
