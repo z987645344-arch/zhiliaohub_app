@@ -1,5 +1,7 @@
 package com.zhiliaohub.app.ui
 
+import androidx.biometric.BiometricPrompt
+
 internal enum class BiometricPromptPurpose {
     LOGIN_SIGNATURE,
     TOTP,
@@ -12,10 +14,15 @@ internal enum class BiometricPromptTerminalState {
     INTERRUPTED,
 }
 
-internal sealed interface BiometricPromptStartDecision {
-    data object Started : BiometricPromptStartDecision
+internal data class BiometricPromptLease(
+    val purpose: BiometricPromptPurpose,
+    val generation: Long,
+)
 
-    data class Busy(val activePurpose: BiometricPromptPurpose) : BiometricPromptStartDecision
+internal sealed interface BiometricPromptStartDecision {
+    data class Started(val lease: BiometricPromptLease) : BiometricPromptStartDecision
+
+    data class Busy(val activeLease: BiometricPromptLease) : BiometricPromptStartDecision
 }
 
 /**
@@ -25,31 +32,46 @@ internal sealed interface BiometricPromptStartDecision {
  * only from success or onAuthenticationError.
  */
 internal class BiometricPromptCoordinator {
-    var activePurpose: BiometricPromptPurpose? = null
+    private var nextGeneration = 1L
+
+    var activeLease: BiometricPromptLease? = null
         private set
 
     var lastTerminalState: BiometricPromptTerminalState? = null
         private set
 
     fun tryStart(purpose: BiometricPromptPurpose): BiometricPromptStartDecision {
-        val active = activePurpose
+        val active = activeLease
         if (active != null) return BiometricPromptStartDecision.Busy(active)
-        activePurpose = purpose
-        return BiometricPromptStartDecision.Started
+        val lease = BiometricPromptLease(purpose, nextGeneration++)
+        activeLease = lease
+        return BiometricPromptStartDecision.Started(lease)
     }
 
     fun finish(
-        purpose: BiometricPromptPurpose,
+        lease: BiometricPromptLease,
         terminalState: BiometricPromptTerminalState,
     ): Boolean {
-        if (activePurpose != purpose) return false
-        activePurpose = null
+        if (activeLease != lease) return false
+        activeLease = null
         lastTerminalState = terminalState
         return true
     }
 
+    fun isActive(lease: BiometricPromptLease): Boolean = activeLease == lease
+
+    fun abandonForLifecycle(): BiometricPromptLease? {
+        val abandonedLease = activeLease ?: return null
+        activeLease = null
+        lastTerminalState = BiometricPromptTerminalState.INTERRUPTED
+        return abandonedLease
+    }
+
+    val activePurpose: BiometricPromptPurpose?
+        get() = activeLease?.purpose
+
     val canStartPrompt: Boolean
-        get() = activePurpose == null
+        get() = activeLease == null
 }
 
 internal fun biometricPromptBusyMessage(
@@ -77,4 +99,13 @@ internal fun biometricPromptTerminalMessage(
 
     BiometricPromptTerminalState.FAILED -> "生物识别未完成：$systemDetail"
     BiometricPromptTerminalState.SUCCEEDED -> error("成功状态不需要错误提示。")
+}
+
+internal fun biometricTerminalState(errorCode: Int): BiometricPromptTerminalState = when (errorCode) {
+    BiometricPrompt.ERROR_USER_CANCELED,
+    BiometricPrompt.ERROR_NEGATIVE_BUTTON,
+    -> BiometricPromptTerminalState.CANCELED
+
+    BiometricPrompt.ERROR_CANCELED -> BiometricPromptTerminalState.INTERRUPTED
+    else -> BiometricPromptTerminalState.FAILED
 }

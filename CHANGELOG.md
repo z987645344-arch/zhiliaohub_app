@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-11 修复生物识别互斥锁生命周期死锁（未打标签）
+
+- **上一轮引入的阻塞回归**：`5b697ff` 为阻止登录签名与TOTP两个Prompt互相取消而增加互斥，但没有在 `onStop` / `onDestroy` 释放。真机退后台时系统弹窗可以消失，而终态回调不保证在同一Activity恢复前送达；下一次登录因此被自己遗留的锁拒绝，界面只剩“身份验证正在进行”、TOTP按钮全灰。互斥修复必须同时保证不会死锁，本条明确保留这次回归教训。
+- **确切泄漏路径与兜底**：`authenticate()` 抛异常及所有 `onAuthenticationError` 原本已有释放；遗漏的是界面不可见路径。现在 `onStop` 主动取消当前Prompt，并在 `finally` 中清除对应登录/TOTP上下文、释放锁、恢复按钮及可重试提示；`onDestroy` 再做幂等兜底。宁可让用户重新验证一次，也不保留一个没有弹窗的锁。
+- **防迟到回调误伤**：协调器由“仅记录用途”升级为带单调代次的租约；每次登录Prompt与TOTP Prompt各自创建回调并捕获本轮租约。旧弹窗的迟到回调即使与新一轮用途相同，也无法释放新租约或覆盖新一轮界面状态。两个Prompt仍分离，登录继续携带 `CryptoObject(signature)`，TOTP继续不携带。
+- **原互斥性质保留**：任一Prompt在飞时，另一方在调用 `authenticate()` 前即被拒绝；Android `onAuthenticationFailed` 仍作为非终态识别失败保留锁，成功、全部终态错误、取消和生命周期离开才释放。
+- **自动化证据**：两个Flavor的JVM测试均由37项增至39项，最终39/39、0失败；新增/强化断言覆盖登录与TOTP两种生命周期释放、AndroidX 14类终态错误码、同用途新旧租约隔离，以及上一轮双向互斥。两个Flavor Lint与Debug APK构建结果见本轮最终验证。
+- **边界**：未修改配对、签名算法、会话协议、TOTP密钥存储、RFC 6238及APK版本。没有代报真机通过；用户仍需实测“登录弹指纹 → Home → 返回App → 重新发起登录”。
+- **逐文件改动（本批新增）**：
+  - `app/src/main/java/com/zhiliaohub/app/ui/BiometricPromptCoordinator.kt`：+41/-10，引入代次租约、生命周期放弃及终态错误分类。
+  - `app/src/main/java/com/zhiliaohub/app/ui/MainActivity.kt`：+86/-48，接入逐轮回调、`onStop`/`onDestroy`取消与必然释放。
+  - `app/src/test/java/com/zhiliaohub/app/ui/BiometricPromptCoordinatorTest.kt`：+71/-35，覆盖死锁、终态错误、迟到回调和互斥回归。
+  - `CHANGELOG.md`：+14/-0，记录阻塞回归、根因、修复证据与真机边界。
+
 ## 2026-09-11 修复登录签名与TOTP生物识别提示互相取消（未打标签）
 
 - **阻塞缺陷与判断纠正**：v0.5 真机联调发现设备配对虽成功，设备登录却始终无法完成；登录签名与TOTP各自持有一个 `BiometricPrompt`，后发起者会取消先前提示。指挥师此前把该问题判断为“不阻塞、下轮再修”，事实证明判断错误，本条保留这次优先级误判。
