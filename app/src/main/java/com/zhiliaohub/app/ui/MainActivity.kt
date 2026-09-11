@@ -23,8 +23,11 @@ import com.zhiliaohub.app.network.BackupStatus
 import com.zhiliaohub.app.network.Challenge
 import com.zhiliaohub.app.network.ProjectBackupStatus
 import com.zhiliaohub.app.network.ZhiliaohubApi
+import com.zhiliaohub.app.security.TotpGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
@@ -36,15 +39,21 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var totpBiometricPrompt: BiometricPrompt
     private val app: ZhiliaohubApplication
         get() = application as ZhiliaohubApplication
 
     private var authJob: Job? = null
     private var healthJob: Job? = null
     private var backupStatusJob: Job? = null
+    private var sessionRefreshJob: Job? = null
+    private var totpStorageJob: Job? = null
+    private var totpDisplayJob: Job? = null
     private var activeApi: ZhiliaohubApi? = null
     private var pendingChallenge: Challenge? = null
+    private var pendingTotpAction: TotpBiometricAction? = null
     private var backupCardState = BackupStatusCardState()
+    private val totpDisplayGate = TotpDisplayGate()
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         beginAuthentication()
@@ -65,14 +74,23 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             biometricCallback,
         )
+        totpBiometricPrompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            totpBiometricCallback,
+        )
         binding.settingsButton.setOnClickListener {
             settingsLauncher.launch(Intent(this, SettingsActivity::class.java))
         }
         binding.retryAuthButton.setOnClickListener { beginAuthentication() }
         binding.pairButton.setOnClickListener { openPairing(resetExisting = true) }
-        binding.refreshHealthButton.setOnClickListener { checkHealth() }
+        binding.refreshHealthButton.setOnClickListener { refreshHealthAndSession() }
         binding.refreshBackupStatusButton.setOnClickListener { checkBackupStatus() }
+        binding.bindTotpButton.setOnClickListener { bindTotpSecret() }
+        binding.showTotpButton.setOnClickListener { promptForTotp(TotpBiometricAction.SHOW_CODE) }
+        binding.unbindTotpButton.setOnClickListener { confirmTotpUnbind() }
 
+        refreshTotpBindingState()
         beginAuthentication()
     }
 
@@ -80,13 +98,23 @@ class MainActivity : AppCompatActivity() {
         authJob?.cancel()
         healthJob?.cancel()
         backupStatusJob?.cancel()
+        sessionRefreshJob?.cancel()
+        totpStorageJob?.cancel()
+        hideTotpCode()
         super.onDestroy()
+    }
+
+    override fun onStop() {
+        hideTotpCode()
+        super.onStop()
     }
 
     private fun beginAuthentication() {
         authJob?.cancel()
         healthJob?.cancel()
         backupStatusJob?.cancel()
+        sessionRefreshJob?.cancel()
+        hideTotpCode()
         pendingChallenge = null
         showAuthLoading("正在检查本地配对与会话…")
         authJob = lifecycleScope.launch {
@@ -295,9 +323,31 @@ class MainActivity : AppCompatActivity() {
         binding.retryAuthButton.visibility = View.GONE
         binding.pairButton.visibility = View.GONE
         binding.monitorContainer.visibility = View.VISIBLE
+        binding.healthCard.visibility = View.VISIBLE
+        binding.backupStatusCard.visibility = View.VISIBLE
         activeApi = api
         checkHealth()
         checkBackupStatus()
+        refreshTotpBindingState()
+    }
+
+    private fun refreshHealthAndSession() {
+        checkHealth()
+        val api = activeApi ?: return
+        sessionRefreshJob?.cancel()
+        sessionRefreshJob = lifecycleScope.launch {
+            when (sessionRefreshDecision(api.checkSession())) {
+                SessionRefreshDecision.SESSION_VALID -> {
+                    binding.authStatus.text = "会话复核通过，当前设备仍有效。"
+                    binding.authStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.success))
+                }
+                SessionRefreshDecision.REAUTHENTICATE -> beginAuthentication()
+                SessionRefreshDecision.CHECK_FAILED -> {
+                    binding.authStatus.text = "健康检查已执行，但认证会话暂时无法复核。"
+                    binding.authStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.danger))
+                }
+            }
+        }
     }
 
     private fun checkHealth() {
@@ -436,13 +486,185 @@ class MainActivity : AppCompatActivity() {
         binding.backupFetchStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
     }
 
+    private fun refreshTotpBindingState() {
+        totpStorageJob?.cancel()
+        totpStorageJob = lifecycleScope.launch {
+            val isBound = try {
+                withContext(Dispatchers.IO) { app.totpSecretStore.isBound() }
+            } catch (_: Exception) {
+                showTotpMessage("无法读取本机 TOTP 绑定状态。", isError = true)
+                false
+            }
+            renderTotpBinding(isBound)
+        }
+    }
+
+    private fun bindTotpSecret() {
+        val editable = binding.totpSecretInput.text
+        val secretInput = CharArray(editable.length) { editable[it] }
+        editable.clear()
+        totpStorageJob?.cancel()
+        totpStorageJob = lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) { app.totpSecretStore.bind(secretInput) }
+                renderTotpBinding(true)
+                showTotpMessage("绑定成功。请完成生物识别，并立即与腾讯验证器核对一次。")
+                promptForTotp(TotpBiometricAction.SHOW_CODE)
+            } catch (error: IllegalArgumentException) {
+                showTotpMessage(error.message ?: "密钥不是有效的 Base32 内容。", isError = true)
+            } catch (_: Exception) {
+                showTotpMessage("无法安全保存 TOTP 密钥，请重试。", isError = true)
+            } finally {
+                secretInput.fill('\u0000')
+            }
+        }
+    }
+
+    private fun confirmTotpUnbind() {
+        AlertDialog.Builder(this)
+            .setTitle("解除本机 TOTP 绑定")
+            .setMessage(R.string.totp_unbind_warning)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("继续") { _, _ -> promptForTotp(TotpBiometricAction.UNBIND) }
+            .show()
+    }
+
+    private fun promptForTotp(action: TotpBiometricAction) {
+        val availability = BiometricManager.from(this)
+            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+        if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
+            showTotpMessage("强生物识别不可用，不能显示或清除本机 TOTP 密钥。", isError = true)
+            return
+        }
+        pendingTotpAction = action
+        val title = when (action) {
+            TotpBiometricAction.SHOW_CODE -> "显示后台动态验证码"
+            TotpBiometricAction.UNBIND -> "确认解除本机绑定"
+        }
+        val subtitle = when (action) {
+            TotpBiometricAction.SHOW_CODE -> "验证通过后才会在屏幕上显示 6 位码"
+            TotpBiometricAction.UNBIND -> "只清除本机密钥，不影响后台或腾讯验证器"
+        }
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .setNegativeButtonText("取消")
+            .build()
+        totpBiometricPrompt.authenticate(promptInfo)
+    }
+
+    private val totpBiometricCallback = object : BiometricPrompt.AuthenticationCallback() {
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            super.onAuthenticationSucceeded(result)
+            when (pendingTotpAction.also { pendingTotpAction = null }) {
+                TotpBiometricAction.SHOW_CODE -> startTotpDisplay()
+                TotpBiometricAction.UNBIND -> clearTotpBinding()
+                null -> showTotpMessage("生物识别上下文已失效，请重试。", isError = true)
+            }
+        }
+
+        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            super.onAuthenticationError(errorCode, errString)
+            pendingTotpAction = null
+            showTotpMessage("生物识别未完成：$errString", isError = true)
+        }
+
+        override fun onAuthenticationFailed() {
+            super.onAuthenticationFailed()
+            showTotpMessage("未识别，请重试生物识别。", isError = true)
+        }
+    }
+
+    private fun startTotpDisplay() {
+        hideTotpCode()
+        totpDisplayGate.unlock()
+        totpDisplayJob = lifecycleScope.launch {
+            var displayedWindow = -1L
+            var currentCode: String? = null
+            while (isActive && totpDisplayGate.isUnlocked) {
+                val nowMillis = System.currentTimeMillis()
+                val nowSeconds = nowMillis / 1_000L
+                val window = nowSeconds / TotpGenerator.PERIOD_SECONDS
+                if (window != displayedWindow) {
+                    currentCode = try {
+                        withContext(Dispatchers.IO) { app.totpSecretStore.codeAt(nowSeconds) }
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (currentCode == null) {
+                        hideTotpCode()
+                        renderTotpBinding(false)
+                        showTotpMessage("本机 TOTP 密钥不可用，请重新绑定。", isError = true)
+                        return@launch
+                    }
+                    displayedWindow = window
+                }
+                binding.totpCode.text = currentCode
+                    ?.let(totpDisplayGate::visibleCode)
+                    ?: getString(R.string.totp_code_hidden)
+                binding.totpCountdown.text = getString(
+                    R.string.totp_seconds_remaining,
+                    TotpGenerator.remainingSeconds(nowSeconds),
+                )
+                val delayMillis = 1_000L - (nowMillis % 1_000L)
+                delay(delayMillis)
+            }
+        }
+    }
+
+    private fun hideTotpCode() {
+        totpDisplayGate.lock()
+        totpDisplayJob?.cancel()
+        totpDisplayJob = null
+        if (::binding.isInitialized) {
+            binding.totpCode.text = getString(R.string.totp_code_hidden)
+            binding.totpCountdown.text = getString(R.string.totp_auth_required)
+        }
+    }
+
+    private fun clearTotpBinding() {
+        totpStorageJob?.cancel()
+        totpStorageJob = lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) { app.totpSecretStore.clear() }
+                hideTotpCode()
+                renderTotpBinding(false)
+                showTotpMessage("本机 TOTP 密钥已清除；后台与腾讯验证器没有变化。")
+            } catch (_: Exception) {
+                showTotpMessage("无法完整清除本机 TOTP 密钥，请重试。", isError = true)
+            }
+        }
+    }
+
+    private fun renderTotpBinding(isBound: Boolean) {
+        binding.totpBindingStatus.text = getString(if (isBound) R.string.totp_bound else R.string.totp_not_bound)
+        binding.totpBindingStatus.setTextColor(
+            ContextCompat.getColor(this, if (isBound) R.color.success else R.color.steel_blue_dark),
+        )
+        binding.totpBindContainer.visibility = if (isBound) View.GONE else View.VISIBLE
+        binding.showTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
+        binding.unbindTotpButton.visibility = if (isBound) View.VISIBLE else View.GONE
+        if (!isBound) hideTotpCode()
+    }
+
+    private fun showTotpMessage(message: String, isError: Boolean = false) {
+        binding.totpMessage.visibility = View.VISIBLE
+        binding.totpMessage.text = message
+        binding.totpMessage.setTextColor(
+            ContextCompat.getColor(this, if (isError) R.color.danger else R.color.steel_blue_dark),
+        )
+    }
+
     private fun showAuthLoading(message: String) {
         binding.authProgress.visibility = View.VISIBLE
         binding.authStatus.text = message
         binding.authStatus.setTextColor(ContextCompat.getColor(this, R.color.ink))
         binding.retryAuthButton.visibility = View.GONE
         binding.pairButton.visibility = View.GONE
-        binding.monitorContainer.visibility = View.GONE
+        binding.monitorContainer.visibility = View.VISIBLE
+        binding.healthCard.visibility = View.GONE
+        binding.backupStatusCard.visibility = View.GONE
     }
 
     private fun showAuthError(message: String, canRetry: Boolean, canPair: Boolean) {
@@ -451,7 +673,9 @@ class MainActivity : AppCompatActivity() {
         binding.authStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
         binding.retryAuthButton.visibility = if (canRetry) View.VISIBLE else View.GONE
         binding.pairButton.visibility = if (canPair) View.VISIBLE else View.GONE
-        binding.monitorContainer.visibility = View.GONE
+        binding.monitorContainer.visibility = View.VISIBLE
+        binding.healthCard.visibility = View.GONE
+        binding.backupStatusCard.visibility = View.GONE
     }
 
     private fun showPairRequired(message: String) {

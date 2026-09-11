@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-09-11 新增本机TOTP卡片并补齐会话刷新复核（未打标签）
+
+- **本机TOTP**：新增手输Base32绑定、6位码与30秒倒计时、强生物识别显示门和本机解绑。绑定成功后立即要求生物识别并显示一次验证码，供用户与腾讯验证器当场核对；退到后台即隐藏。TOTP是纯本机能力，服务器会话或网络不可用时卡片仍可进入，不新增后端接口、相机权限或出站请求。
+- **实现选择**：使用平台 `javax.crypto.Mac` 的 `HmacSHA1`，自行实现RFC 6238规定的时间计数器与动态截断；严格Base32解码支持RFC 4648末尾填充和无填充输入。未引入TOTP第三方依赖，避免为约二十行协议胶水扩大供应链。
+- **密钥边界**：真实Base32密钥不形成持久String；输入先复制到 `CharArray` 并立即清空输入框，规范化、AES与HMAC使用的明文缓冲区均在用后覆盖。Android Keystore内的本App专用AES密钥负责GCM加密，DataStore只保存IV与密文；解绑尝试同时删除密文和Keystore别名。现有 `allowBackup=false`、`fullBackupContent=false` 与 `dataExtractionRules` 已排除整个文件域，无须放宽或新增规则。
+- **已知代价**：同一TOTP密钥同时存在于腾讯验证器和本App，任一App被攻破都等于后台TOTP泄漏。这是“两边都能显示同一个码”的固有代价，用户已知情。本轮没有实现同步、上传、二维码扫描或崩溃上报。
+- **设备吊销显示滞后**：健康卡“立即检查”现在保留公开 `/health` 请求，同时调用既有认证 `checkSession()`；假401进入原有重新认证流程，不改配对、挑战应答、登录或会话持久化协议。
+- **自动化证据**：两个Flavor各32项JVM测试、0失败；新增11项覆盖RFC 6238附录B全部6个SHA-1时间点、Base32填充/无填充与非法输入、固定Speakeasy期望值、AES-GCM密文往返、备份排除、无网络/日志依赖、生物识别显示门、解绑双层清理源码契约和会话刷新401。两个Flavor Lint均0 errors、7 warnings，两个Debug APK均构建成功。
+- **未验证**：没有把真实TOTP密钥输入测试环境，也没有在真机执行Keystore/DataStore生命周期、生物识别、倒计时、退后台隐藏、解绑或与腾讯验证器对码；这些步骤留给用户的重绑仪式，不能用JVM测试代报通过。`versionCode=5`、`versionName=0.4.0`未改；本轮不推送、不核CI、不打标签。
+- **逐文件改动（本批新增）**：
+  - `app/src/main/java/com/zhiliaohub/app/security/Base32Codec.kt`：+79/-0，严格规范化、校验、解码并清理输入缓冲区。
+  - `app/src/main/java/com/zhiliaohub/app/security/TotpGenerator.kt`：+47/-0，平台HMAC-SHA1的RFC 6238实现。
+  - `app/src/main/java/com/zhiliaohub/app/security/TotpSecretCrypto.kt`：+29/-0，独立可测的AES-GCM密文封装。
+  - `app/src/main/java/com/zhiliaohub/app/security/EncryptedTotpSecretStore.kt`：+115/-0，Keystore密钥、密文DataStore与双层清除。
+  - `app/src/main/java/com/zhiliaohub/app/ui/TotpUiState.kt`：+41/-0，生物识别显示门与会话刷新决策。
+  - `app/src/main/java/com/zhiliaohub/app/ZhiliaohubApplication.kt`：+4/-0，初始化本机TOTP密钥存储。
+  - `app/src/main/java/com/zhiliaohub/app/ui/MainActivity.kt`：+227/-3，绑定、显示、倒计时、隐藏、解绑及健康按钮会话复核。
+  - `app/src/main/res/layout/activity_main.xml`：+120/-4，增加独立TOTP卡片并把认证卡片单独控制显隐。
+  - `app/src/main/res/values/strings.xml`：+14/-0，增加绑定、安全提示、倒计时与解绑文案。
+  - `app/src/test/java/com/zhiliaohub/app/security/TotpGeneratorTest.kt`：+60/-0，覆盖RFC与Speakeasy固定期望值。
+  - `app/src/test/java/com/zhiliaohub/app/security/TotpSecurityContractTest.kt`：+88/-0，覆盖密文、备份排除、无网络日志依赖及清除契约。
+  - `app/src/test/java/com/zhiliaohub/app/ui/TotpUiStateTest.kt`：+51/-0，覆盖生物识别门与认证401。
+  - `README.md`：+8/-3；`STATUS.md`：+16/-2，同步安全模型、已知代价、验证证据与真机边界。
+  - `CHANGELOG.md`：+25/-0，记录本条现场证据与逐文件范围。
+
 ## Git标签 v0.4 - 2026-09-12
 
 - **覆盖 1 条工作条目、3 个提交**，其中 1 个属本轮存档动作本身：2026-09-11 主界面新增两项目备份状态卡片（`a962e95`）、APK 版本更新至 0.4.0（`f772e0a`），以及本条存档提交。Android CI `34581934037` success。

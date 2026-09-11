@@ -1,6 +1,6 @@
 # 知了hub 管理助手（Android）
 
-知了hub 管理助手是 `zhiliaohub` 管理后台的配套原生 Android App。当前版本以仓库 Git 标签现查为准，APK 构建版本以 `app/build.gradle.kts` 为准。当前功能聚焦单设备安全配对、持久会话、P-256 挑战应答登录，以及网站健康和两项目备份状态两张真实卡片；不包含内容编辑、二维码扫描或虚构的监控数据。
+知了hub 管理助手是 `zhiliaohub` 管理后台的配套原生 Android App。当前版本以仓库 Git 标签现查为准，APK 构建版本以 `app/build.gradle.kts` 为准。当前功能聚焦单设备安全配对、持久会话、P-256 挑战应答登录，以及网站健康、两项目备份状态和本机TOTP三张真实卡片；不包含内容编辑、二维码扫描或虚构的监控数据。
 
 本仓库与主站仓库相互独立。App 只对接服务端公开接口；服务端配套改动仍在独立的 `zhiliaohub` 仓库维护。
 
@@ -91,6 +91,9 @@ USB 调试场景仍可使用 `adb reverse tcp:3001 tcp:3001` 和 `http://localho
 - 公钥：以 PEM 编码的 SPKI `PUBLIC KEY` 形式提交到配对接口。
 - 挑战签名：对服务端原样返回的 `signedPayload` UTF-8 字节执行 `SHA256withECDSA`；Android `Signature` 输出 ASN.1 DER，再以 Base64 提交。
 - session：只持久化名为 `zhiliaohub.admin.sid` 的 Cookie。Cookie 内容使用另一把 Android Keystore AES-GCM 密钥加密后保存，App 备份与设备迁移均已关闭。
+- TOTP：管理员手动输入网页设置页显示的 Base32 密钥；App使用平台 `HmacSHA1` 按RFC 6238生成6位、30秒窗口验证码。密钥由本App专用的Android Keystore AES-GCM密钥加密，DataStore只保存IV与密文；输入、解密和HMAC使用的明文缓冲区用后覆盖。验证码显示与本机解绑均要求强生物识别，退到后台后立即隐藏。
+- TOTP密钥永远不会加入网络请求或日志；备份和设备迁移规则排除了包括TOTP DataStore在内的全部App文件域。解绑只清除本机的密文与Keystore密钥，不改变后台或腾讯验证器。
+- **已知代价**：同一TOTP密钥同时存在于腾讯验证器和本App，任一App被攻破都等于后台TOTP泄漏。这是“两边都能显示同一个码”的固有代价，用户已知情并接受。
 - 非敏感设置：服务器地址和“已配对”标记保存在 Preferences DataStore；该标记不能替代 Keystore 密钥或服务端认证。
 - 日志：代码不记录私钥、签名原文、Cookie 或配对码。
 
@@ -118,8 +121,8 @@ app/src/main/
 ├── java/com/zhiliaohub/app/
 │   ├── data/       # DataStore 设置与配对清理
 │   ├── network/    # URL/origin 校验、OkHttp 与设备认证 API
-│   ├── security/   # P-256 Keystore 和 AES-GCM CookieJar
-│   └── ui/         # 设置、配对、登录/健康状态界面
+│   ├── security/   # P-256设备密钥、加密Cookie及本机TOTP
+│   └── ui/         # 设置、配对、登录与三张状态卡片
 └── res/
     ├── layout/     # 原生 View XML
     └── xml/        # 网络安全与数据导出规则
@@ -146,5 +149,7 @@ app/src/qa/res/
 2026-08-14 已完成两个Debug变体的编译、各16项JVM测试和Lint（0 errors），并在Vivo V2405A（Android 15 / API 35）上并行安装。测试版通过独立UID在本地后台完成配对、生物识别登录和健康状态“在线”；正式版覆盖安装保留原生产设置和本地凭据，重启后现有生产会话免生物识别恢复且健康状态“在线”，但过程中观察到一次可恢复的瞬时网络失败。本轮没有清除正式版生产凭据重新配对。此前局域网、USB端到端及覆盖安装验证记录详见 [STATUS.md](STATUS.md)。
 
 2026-09-11 在本机完成备份状态卡片的双变体验证：`prodDebug`、`qaDebug` 各21项JVM测试均0失败，Lint均0 errors。假响应覆盖两侧正常、单侧超期、知天不可达、整体网络失败和401；网络失败保留上次两行结果，401回到既有重新登录流程，模型不包含 `diagnostic`。本轮未安装真机，qa连接本地后台与prod连接生产环境的显示结果仍须由用户实际确认。
+
+2026-09-11 在本机完成TOTP核心与安全契约验证：RFC 6238附录B的6个SHA-1时间点、RFC 4648 Base32有/无填充、固定Speakeasy期望值、AES-GCM密文往返、备份排除、无网络/日志依赖、生物识别显示门和会话刷新401决策均有JVM测试。两个Flavor测试、Lint与Debug构建均通过。真机Keystore/DataStore生命周期、生物识别、与腾讯验证器对码仍须在用户重绑仪式中验证，不能由JVM测试代报通过。
 
 仓库使用 [GitHub Actions](https://github.com/z987645344-arch/zhiliaohub_app/actions) 在 push 或 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；CI 不运行模拟器或替代人工真机验证。

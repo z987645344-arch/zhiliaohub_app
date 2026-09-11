@@ -7,6 +7,7 @@ import com.zhiliaohub.app.network.ApiClientFactory
 import com.zhiliaohub.app.network.NetworkConnectionMonitor
 import com.zhiliaohub.app.security.DeviceKeyManager
 import com.zhiliaohub.app.security.EncryptedSessionCookieJar
+import com.zhiliaohub.app.security.EncryptedTotpSecretStore
 
 class ZhiliaohubApplication : Application() {
     lateinit var appPreferences: AppPreferences
@@ -14,6 +15,8 @@ class ZhiliaohubApplication : Application() {
     lateinit var deviceKeyManager: DeviceKeyManager
         private set
     lateinit var sessionCookieJar: EncryptedSessionCookieJar
+        private set
+    lateinit var totpSecretStore: EncryptedTotpSecretStore
         private set
     lateinit var registrationManager: RegistrationManager
         private set
@@ -26,6 +29,7 @@ class ZhiliaohubApplication : Application() {
         appPreferences = AppPreferences(this)
         deviceKeyManager = DeviceKeyManager()
         sessionCookieJar = EncryptedSessionCookieJar(this)
+        totpSecretStore = EncryptedTotpSecretStore(this)
         registrationManager = RegistrationManager(
             appPreferences = appPreferences,
             deviceKeyManager = deviceKeyManager,

@@ -4,7 +4,7 @@
 
 ## 当前进度
 
-Android App 当前最新Git标签为 `v0.3.1`，APK 内部 `versionName` 为 `0.3.0`、`versionCode` 为4。本版本包含 `prod`/`qa` 双Product Flavor和网络切换容错：正式版包名保持 `com.zhiliaohub.app`，测试版使用 `com.zhiliaohub.app.test`，二者共用同一份源码并可在一台手机并行安装。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
+Android App 当前标签以 `git tag --sort=-v:refname` 现查为准，APK内部版本以 `app/build.gradle.kts` 现查为准。本版本包含 `prod`/`qa` 双Product Flavor和网络切换容错：正式版包名保持 `com.zhiliaohub.app`，测试版使用 `com.zhiliaohub.app.test`，二者共用同一份源码并可在一台手机并行安装。远程仓库为 [z987645344-arch/zhiliaohub_app](https://github.com/z987645344-arch/zhiliaohub_app)。
 
 CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint。[CI #2](https://github.com/z987645344-arch/zhiliaohub_app/actions/runs/31090840332) 已在修正 runner 的 `sdkmanager` PATH 差异后真实运行成功；首次失败记录仍保留在 Actions 历史中。
 
@@ -32,8 +32,22 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 - 启动时优先探测 Cookie 会话；失效后才进入生物识别挑战登录。
 - 设备吊销后的明确提示、凭据清理与重新配对入口。
 - `/health` 在线/离线状态和最近检查时间；已认证的备份状态卡片分别显示知了hub与知天的服务端状态词和提示，不在App重算日期，也不解析或渲染 `diagnostic`。
+- 本机TOTP卡片：手输Base32密钥，Keystore AES-GCM密文落盘，强生物识别后显示6位码与剩余秒数；解绑只清本机。健康卡“立即检查”同时复核认证会话，设备吊销后的401不再被公开 `/health` 掩盖。
 
 ## 已验证
+
+### 本机TOTP与会话复核（2026-09-11，本机自动化）
+
+| 检查项 | 真实结果 |
+|---|---|
+| RFC 6238 | 附录B SHA-1的6个时间点全部通过；App显示固定6位码、周期30秒 |
+| Base32 | RFC 4648填充与无填充输入均通过；手输时去空白、不区分大小写、非法字符明确拒绝，输入字符数组用后覆盖 |
+| 跨实现 | 固定测试密钥和时间窗与Speakeasy期望的6位结果一致 |
+| 密文存储 | JVM用AES-GCM真实加解密，断言持久化负载不含明文；源码契约锁住DataStore只写密文、解绑删除密文和Keystore别名 |
+| 不出设备 | 网络包不引用TOTP，TOTP存储不依赖OkHttp或日志；`allowBackup=false`且云备份、设备迁移均排除整个文件域 |
+| 生物识别门 | 状态模型断言未解锁时验证码不可见、成功后可见、重新锁定后再次不可见；实际Android BiometricPrompt仍待真机验证 |
+| 吊销滞后 | 健康卡刷新保留 `/health`，同时调用认证 `checkSession()`；假401响应进入既有重新认证决策 |
+| 真机边界 | 未用真实TOTP密钥进行绑定；Keystore/DataStore实际生命周期、生物识别、与腾讯验证器同码由用户在重绑仪式中验证 |
 
 ### 备份状态卡片（2026-09-11，本机自动化）
 
@@ -145,5 +159,5 @@ CI 已配置为在 push 和 pull request 到 `main` 时执行 Debug 编译、JVM
 
 1. 正式部署后切换 HTTPS，复核证书链、域名与代理行为。
 2. 补测生物识别取消/锁定/重新录入、限流和挑战过期分支。
-3. 在真机分别用qa连接本地后台、prod连接生产环境，确认备份状态两行、刷新、网络失败保留及401重新登录的实际显示。
+3. 在真机重绑仪式中分别为需要的App手输同一Base32密钥，完成生物识别后与腾讯验证器核对一次；再验证倒计时、退后台隐藏和本机解绑。
 4. 仅在产品明确需要时增加二维码扫描配对；当前继续保持手动输入。
