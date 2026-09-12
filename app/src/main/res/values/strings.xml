@@ -41,13 +41,11 @@
     <string name="totp_seconds_remaining">剩余 %1$d 秒</string>
     <string name="pairing_description">先在网页后台用密码和动态码登录，再到设备管理生成配对码。填入下方后，这台手机就可以安全登录；登录密钥只留在手机里。</string>
     <string name="device_name_hint">设备名称</string>
-    <string name="pairing_code_hint">XXXXX-XXXXX</string>
     <string name="submit_pairing">提交配对</string>
     <string name="change_server_address">修改服务器地址</string>
     <string name="back">返回</string>
     <string name="settings_description">填写你的后台连接地址。只填到主机和端口，不要带登录路径、账号或查询参数。保存地址不会清除已有配对。</string>
     <string name="trusted_lan_hint">局域网使用需确保手机与电脑在同一 WiFi，且仅建议在可信任的家庭网络下使用。</string>
-    <string name="server_url_hint">粘贴后台连接地址</string>
     <string name="http_warning">当前为开发模式，未加密连接，正式部署后必须改为 HTTPS 地址。HTTP 仅允许 localhost、回环地址或 RFC1918 私有 IPv4，仍会暴露会话与传输内容。</string>
     <string name="http_acknowledgement">我确认这是临时开发地址，并了解明文连接风险</string>
     <string name="save_server_address">保存服务器地址</string>
@@ -58,7 +56,7 @@
     <string name="pairing_eyebrow">SETUP / 02 配对</string>
     <string name="settings_recovery_heading">连接维护</string>
     <string name="settings_recovery_hint">登录异常时可先退出重试。移除配对会删除登录密钥，只有准备好重新配对时才使用。</string>
-    <string name="pairing_code_label">一次性配对码</string>
+    <string name="pairing_code_label">一次性配对码（XXXXX-XXXXX）</string>
     <string name="address_label">后台连接地址</string>
     <string name="main_message_01">正在检查本地配对与会话…</string>
     <string name="main_message_02">尚未设置服务器</string>
