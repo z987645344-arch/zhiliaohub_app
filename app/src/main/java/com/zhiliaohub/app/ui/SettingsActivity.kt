@@ -8,6 +8,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
+import com.zhiliaohub.app.R
 import com.zhiliaohub.app.ZhiliaohubApplication
 import com.zhiliaohub.app.databinding.ActivitySettingsBinding
 import com.zhiliaohub.app.network.ServerAddress
@@ -34,7 +35,7 @@ class SettingsActivity : AppCompatActivity() {
                 withContext(Dispatchers.IO) { app.registrationManager.clearSession() }
                 Toast.makeText(
                     this@SettingsActivity,
-                    "会话 Cookie 已清除；下次进入将使用生物识别重新登录。",
+                    getString(R.string.settings_message_01),
                     Toast.LENGTH_LONG,
                 ).show()
                 setResult(Activity.RESULT_OK)
@@ -64,11 +65,11 @@ class SettingsActivity : AppCompatActivity() {
         val address = try {
             ServerAddress.parse(binding.serverUrlInput.text?.toString().orEmpty())
         } catch (error: IllegalArgumentException) {
-            showUrlError(error.message ?: "服务器地址无效。")
+            showUrlError(error.message ?: getString(R.string.settings_message_02))
             return
         }
         if (address.isCleartext && !binding.httpAcknowledgement.isChecked) {
-            showUrlError("使用 HTTP 开发地址前，请先勾选明文连接风险确认。")
+            showUrlError(getString(R.string.settings_message_03))
             return
         }
 
@@ -79,9 +80,9 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(
                 this@SettingsActivity,
                 if (address.isCleartext) {
-                    "开发地址已保存；当前连接未加密。已有配对和设备密钥保持不变。"
+                    getString(R.string.settings_message_04)
                 } else {
-                    "HTTPS 服务器地址已保存；已有配对和设备密钥保持不变。"
+                    getString(R.string.settings_message_05)
                 },
                 Toast.LENGTH_LONG,
             ).show()
@@ -91,15 +92,15 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun confirmResetPairing() {
         AlertDialog.Builder(this)
-            .setTitle("清除本机配对？")
-            .setMessage("这会清除会话、删除 Keystore 中的设备签名密钥，并要求使用网页后台的新配对码。")
-            .setNegativeButton("取消", null)
-            .setPositiveButton("确认清除") { _, _ ->
+            .setTitle(getString(R.string.settings_message_06))
+            .setMessage(getString(R.string.settings_message_07))
+            .setNegativeButton(getString(R.string.settings_message_08), null)
+            .setPositiveButton(getString(R.string.settings_message_09)) { _, _ ->
                 setBusy(true)
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) { app.registrationManager.resetPairing() }
                     setResult(Activity.RESULT_OK)
-                    Toast.makeText(this@SettingsActivity, "本机配对已清除。", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@SettingsActivity, getString(R.string.settings_message_10), Toast.LENGTH_LONG).show()
                     setBusy(false)
                 }
             }

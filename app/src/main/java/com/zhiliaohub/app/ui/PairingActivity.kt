@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
+import com.zhiliaohub.app.R
 import com.zhiliaohub.app.ZhiliaohubApplication
 import com.zhiliaohub.app.databinding.ActivityPairingBinding
 import com.zhiliaohub.app.network.ApiResult
@@ -60,9 +61,9 @@ class PairingActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val settings = app.appPreferences.current()
             serverUrl = settings.serverUrl
-            binding.serverValue.text = settings.serverUrl?.let { "服务器：$it" } ?: "尚未设置服务器地址"
+            binding.serverValue.text = settings.serverUrl?.let { getString(R.string.pairing_message_01, it) } ?: getString(R.string.pairing_message_02)
             if (settings.serverUrl == null) {
-                showStatus("请先设置后台服务器地址。")
+                showStatus(getString(R.string.pairing_message_03))
             }
         }
     }
@@ -71,10 +72,10 @@ class PairingActivity : AppCompatActivity() {
         val result = BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         val message = when (result) {
             BiometricManager.BIOMETRIC_SUCCESS -> null
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "请先在系统设置中录入强生物识别信息，再进行设备配对。"
-            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "当前设备没有可用的强生物识别硬件，无法建立安全设备密钥。"
-            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> "生物识别硬件暂时不可用，请稍后重试。"
-            else -> "当前设备无法使用所需的强生物识别验证。"
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> getString(R.string.pairing_message_04)
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> getString(R.string.pairing_message_05)
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> getString(R.string.pairing_message_06)
+            else -> getString(R.string.pairing_message_07)
         }
         binding.pairButton.isEnabled = message == null
         if (message != null) showStatus(message)
@@ -84,19 +85,19 @@ class PairingActivity : AppCompatActivity() {
     private fun pairDevice() {
         val currentServerUrl = serverUrl
         if (currentServerUrl == null) {
-            showStatus("请先设置后台服务器地址。")
+            showStatus(getString(R.string.pairing_message_08))
             return
         }
         if (!verifyBiometricAvailability()) return
 
         val pairingCode = binding.pairingCodeInput.text?.toString().orEmpty()
         if (!PairingCode.isValid(pairingCode)) {
-            showStatus("配对码格式错误，应为 XXXXX-XXXXX；请检查是否输错字符。")
+            showStatus(getString(R.string.pairing_message_09))
             return
         }
         val deviceName = binding.deviceNameInput.text?.toString()?.trim().orEmpty()
         if (deviceName.isEmpty()) {
-            showStatus("请输入设备名称。")
+            showStatus(getString(R.string.pairing_message_10))
             return
         }
 
@@ -112,7 +113,7 @@ class PairingActivity : AppCompatActivity() {
                     publicKeyPem = publicKeyPem,
                 )
             } catch (error: Exception) {
-                ApiResult.ProtocolFailure("无法生成或读取 Android Keystore 设备密钥。", error)
+                ApiResult.ProtocolFailure(getString(R.string.pairing_message_11), error)
             }
 
             when (result) {
@@ -132,11 +133,11 @@ class PairingActivity : AppCompatActivity() {
     }
 
     private fun pairingHttpError(error: ApiResult.HttpFailure): String = when (error.statusCode) {
-        400 -> "设备信息或公钥未被服务器接受：${error.message}"
-        401 -> "配对码不正确、已过期或已被使用。请在网页后台重新生成配对码后再试。"
-        429 -> "尝试次数过多，服务器已临时限流，请稍后再试。"
-        in 500..599 -> "后台服务暂时异常（HTTP ${error.statusCode}），请稍后重试。"
-        else -> "服务器拒绝配对（HTTP ${error.statusCode}）：${error.message}"
+        400 -> getString(R.string.pairing_message_12, error.message)
+        401 -> getString(R.string.pairing_message_13)
+        429 -> getString(R.string.pairing_message_14)
+        in 500..599 -> getString(R.string.pairing_message_15, error.statusCode)
+        else -> getString(R.string.pairing_message_16, error.statusCode, error.message)
     }
 
     private fun showStatus(message: String) {
@@ -151,7 +152,7 @@ class PairingActivity : AppCompatActivity() {
         binding.pairingCodeInput.isEnabled = !busy
         binding.deviceNameInput.isEnabled = !busy
         if (busy) {
-            binding.statusMessage.text = "正在安全配对…"
+            binding.statusMessage.text = getString(R.string.pairing_message_17)
             binding.statusMessage.visibility = View.VISIBLE
         }
     }

@@ -8,35 +8,49 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="@dimen/page_gutter">
+
+        <TextView
+            style="@style/Archive.Kicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_eyebrow" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/settings_title"
             android:textColor="@color/ink"
-            android:textSize="26sp"
+            android:textSize="@dimen/type_title"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/settings_description"
             android:textColor="@color/steel_blue_dark" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:text="@string/trusted_lan_hint"
             android:textColor="@color/steel_blue_dark" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xl"
+            android:labelFor="@id/serverUrlInput"
+            android:text="@string/address_label"
+            android:textColor="@color/ink" />
 
         <EditText
             android:id="@+id/serverUrlInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="@dimen/space_md"
             android:autofillHints="url"
             android:hint="@string/server_url_hint"
             android:imeOptions="actionDone"
@@ -47,7 +61,7 @@
             android:id="@+id/urlError"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="@dimen/space_xs"
             android:textColor="@color/danger"
             android:visibility="gone" />
 
@@ -55,7 +69,7 @@
             android:id="@+id/httpWarningContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="@dimen/space_md"
             android:background="@drawable/bg_warning"
             android:orientation="vertical"
             android:visibility="gone">
@@ -65,14 +79,14 @@
                 android:layout_height="wrap_content"
                 android:text="@string/http_warning"
                 android:textColor="@color/danger"
-                android:textSize="16sp"
+                android:textSize="@dimen/type_body"
                 android:textStyle="bold" />
 
             <CheckBox
                 android:id="@+id/httpAcknowledgement"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/space_sm"
                 android:text="@string/http_acknowledgement"
                 android:textColor="@color/ink" />
         </LinearLayout>
@@ -81,28 +95,43 @@
             android:id="@+id/saveButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="@dimen/space_xl"
             android:text="@string/save_server_address" />
 
+        <TextView
+            style="@style/Archive.Kicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_section"
+            android:text="@string/settings_recovery_heading" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_recovery_hint"
+            android:textColor="@color/steel_blue_dark" />
+
         <Button
+            style="@style/Archive.SecondaryButton"
             android:id="@+id/clearSessionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/clear_session_cookie" />
 
         <Button
+            style="@style/Archive.DangerButton"
             android:id="@+id/resetPairingButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/reset_pairing" />
 
         <Button
+            style="@style/Archive.SecondaryButton"
             android:id="@+id/cancelButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/back" />
     </LinearLayout>
 </ScrollView>

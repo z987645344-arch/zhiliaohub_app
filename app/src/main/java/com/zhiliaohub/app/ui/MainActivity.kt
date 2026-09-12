@@ -113,40 +113,40 @@ class MainActivity : AppCompatActivity() {
         sessionRefreshJob?.cancel()
         hideTotpCode()
         pendingChallenge = null
-        showAuthLoading("正在检查本地配对与会话…")
+        showAuthLoading(getString(R.string.main_message_01))
         authJob = lifecycleScope.launch {
             val settings = app.appPreferences.current()
-            binding.serverValue.text = settings.serverUrl ?: "尚未设置服务器"
+            binding.serverValue.text = settings.serverUrl ?: getString(R.string.main_message_02)
             val serverUrl = settings.serverUrl
             if (serverUrl == null) {
-                showAuthError("请先设置后台服务器地址。", canRetry = false, canPair = false)
+                showAuthError(getString(R.string.main_message_03), canRetry = false, canPair = false)
                 return@launch
             }
             if (!settings.isPaired) {
-                showPairRequired("当前设备尚未配对，请输入网页后台生成的一次性配对码。")
+                showPairRequired(getString(R.string.main_message_04))
                 return@launch
             }
             val hasSigningKey = withContext(Dispatchers.IO) { app.deviceKeyManager.hasSigningKey() }
             if (!hasSigningKey) {
                 app.appPreferences.setPaired(false)
                 withContext(Dispatchers.IO) { app.registrationManager.clearSession() }
-                showPairRequired("本机设备密钥不存在或已丢失，需要重新配对。")
+                showPairRequired(getString(R.string.main_message_05))
                 return@launch
             }
 
             val api = try {
                 app.apiClientFactory.create(serverUrl)
             } catch (error: IllegalArgumentException) {
-                showAuthError("已保存的服务器地址无效，请重新设置。", canRetry = false, canPair = false)
+                showAuthError(getString(R.string.main_message_06), canRetry = false, canPair = false)
                 return@launch
             }
             activeApi = api
             when (val session = api.checkSession()) {
-                is ApiResult.Success -> showAuthenticated(api, "现有会话仍有效，已免生物识别登录。")
+                is ApiResult.Success -> showAuthenticated(api, getString(R.string.main_message_07))
                 is ApiResult.HttpFailure -> {
                     if (session.statusCode == 401) requestChallenge(api)
                     else showAuthError(
-                        "会话检查失败（HTTP ${session.statusCode}）：${session.message}",
+                        getString(R.string.main_message_08, session.statusCode, session.message),
                         canRetry = true,
                         canPair = false,
                     )
@@ -162,14 +162,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun requestChallenge(api: ZhiliaohubApi) {
-        showAuthLoading("会话已失效，正在申请设备登录挑战…")
+        showAuthLoading(getString(R.string.main_message_09))
         when (val result = api.requestChallenge()) {
             is ApiResult.Success -> promptForSignature(result.value)
             is ApiResult.HttpFailure -> when (result.statusCode) {
                 409 -> handleRevokedDevice()
-                429 -> showAuthError("设备认证请求过多，服务器已临时限流，请稍后重试。", true, false)
+                429 -> showAuthError(getString(R.string.main_message_10), true, false)
                 else -> showAuthError(
-                    "无法获取登录挑战（HTTP ${result.statusCode}）：${result.message}",
+                    getString(R.string.main_message_11, result.statusCode, result.message),
                     canRetry = true,
                     canPair = false,
                 )
@@ -188,7 +188,7 @@ class MainActivity : AppCompatActivity() {
             .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         if (biometricAvailability != BiometricManager.BIOMETRIC_SUCCESS) {
             showAuthError(
-                "强生物识别不可用。请确认系统已录入指纹或其他强生物识别信息。",
+                getString(R.string.main_message_12),
                 canRetry = true,
                 canPair = false,
             )
@@ -227,18 +227,18 @@ class MainActivity : AppCompatActivity() {
                 lease,
                 BiometricPromptTerminalState.FAILED,
             )
-            showAuthError("无法访问设备签名密钥，需要重新配对。", canRetry = false, canPair = true)
+            showAuthError(getString(R.string.main_message_13), canRetry = false, canPair = true)
             return
         }
 
         pendingChallenge = challenge
         binding.authProgress.visibility = View.GONE
-        binding.authStatus.text = "请完成生物识别，以授权本次登录签名。"
+        binding.authStatus.text = getString(R.string.main_message_14)
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("确认登录知了hub")
-            .setSubtitle("验证后仅签名本次服务器挑战，私钥不会离开设备")
+            .setTitle(getString(R.string.main_message_15))
+            .setSubtitle(getString(R.string.main_message_16))
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .setNegativeButtonText("取消")
+            .setNegativeButtonText(getString(R.string.main_message_17))
             .build()
         val prompt = BiometricPrompt(
             this,
@@ -255,7 +255,7 @@ class MainActivity : AppCompatActivity() {
                 lease,
                 BiometricPromptTerminalState.FAILED,
             )
-            showAuthError("无法启动登录身份验证，请重试。", canRetry = true, canPair = false)
+            showAuthError(getString(R.string.main_message_18), canRetry = true, canPair = false)
         }
     }
 
@@ -269,7 +269,7 @@ class MainActivity : AppCompatActivity() {
             val signature = result.cryptoObject?.signature
             if (challenge == null || signature == null) {
                 showAuthError(
-                    "生物识别成功，但登录签名上下文已被系统打断，请重试；设备密钥未被判定失效。",
+                    getString(R.string.main_message_19),
                     true,
                     false,
                 )
@@ -278,7 +278,7 @@ class MainActivity : AppCompatActivity() {
             val signatureBase64 = try {
                 signChallenge(signature, challenge.signedPayload)
             } catch (_: Exception) {
-                showAuthError("设备签名失败，请重试；若持续失败请重新配对。", true, true)
+                showAuthError(getString(R.string.main_message_20), true, true)
                 return
             }
             lifecycleScope.launch { submitLogin(challenge, signatureBase64) }
@@ -301,25 +301,25 @@ class MainActivity : AppCompatActivity() {
         override fun onAuthenticationFailed() {
             super.onAuthenticationFailed()
             if (!biometricPromptCoordinator.isActive(lease)) return
-            binding.authStatus.text = "未识别，请重试生物识别。"
+            binding.authStatus.text = getString(R.string.main_message_21)
         }
     }
 
     private suspend fun submitLogin(challenge: Challenge, signatureBase64: String) {
         val api = activeApi ?: run {
-            showAuthError("登录上下文已失效，请重新开始。", true, false)
+            showAuthError(getString(R.string.main_message_22), true, false)
             return
         }
-        showAuthLoading("生物识别已通过，正在提交设备签名…")
+        showAuthLoading(getString(R.string.main_message_23))
         when (val result = api.login(challenge.challengeId, signatureBase64)) {
-            is ApiResult.Success -> showAuthenticated(api, "设备挑战应答登录成功，会话已安全保存。")
+            is ApiResult.Success -> showAuthenticated(api, getString(R.string.main_message_24))
             is ApiResult.HttpFailure -> {
                 if (result.statusCode == 401) probeRevocationAfterRejectedLogin(api)
                 else if (result.statusCode == 429) {
-                    showAuthError("设备认证请求过多，服务器已临时限流，请稍后重试。", true, false)
+                    showAuthError(getString(R.string.main_message_25), true, false)
                 } else {
                     showAuthError(
-                        "设备登录失败（HTTP ${result.statusCode}）：${result.message}",
+                        getString(R.string.main_message_26, result.statusCode, result.message),
                         canRetry = true,
                         canPair = false,
                     )
@@ -338,10 +338,10 @@ class MainActivity : AppCompatActivity() {
         when (val probe = api.requestChallenge()) {
             is ApiResult.HttpFailure -> {
                 if (probe.statusCode == 409) handleRevokedDevice()
-                else showAuthError("设备签名被拒绝，请重新尝试登录。", true, true)
+                else showAuthError(getString(R.string.main_message_27), true, true)
             }
             is ApiResult.Success -> showAuthError(
-                "设备签名未被接受。挑战可能已过期，或本设备已被另一台设备替换。请重试；若持续失败请重新配对。",
+                getString(R.string.main_message_28),
                 canRetry = true,
                 canPair = true,
             )
@@ -356,20 +356,20 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun handleRevokedDevice() {
         withContext(Dispatchers.IO) { app.registrationManager.resetPairing() }
-        showPairRequired("当前设备已被吊销，请在网页后台重新生成配对码。")
+        showPairRequired(getString(R.string.main_message_29))
         if (!isFinishing && !isDestroyed) {
             AlertDialog.Builder(this)
-                .setTitle("设备需要重新配对")
-                .setMessage("当前设备已被吊销，请在网页后台重新生成配对码。旧会话和旧设备密钥已从本机清除。")
-                .setNegativeButton("稍后", null)
-                .setPositiveButton("前往配对") { _, _ -> openPairing(resetExisting = false) }
+                .setTitle(getString(R.string.main_message_30))
+                .setMessage(getString(R.string.main_message_31))
+                .setNegativeButton(getString(R.string.main_message_32), null)
+                .setPositiveButton(getString(R.string.main_message_33)) { _, _ -> openPairing(resetExisting = false) }
                 .show()
         }
     }
 
     private suspend fun handleInvalidatedKey() {
         withContext(Dispatchers.IO) { app.registrationManager.resetPairing() }
-        showPairRequired("生物识别信息发生变化，Android 已使设备密钥失效。请重新配对。")
+        showPairRequired(getString(R.string.main_message_34))
     }
 
     private fun showAuthenticated(api: ZhiliaohubApi, message: String) {
@@ -394,12 +394,12 @@ class MainActivity : AppCompatActivity() {
         sessionRefreshJob = lifecycleScope.launch {
             when (sessionRefreshDecision(api.checkSession())) {
                 SessionRefreshDecision.SESSION_VALID -> {
-                    binding.authStatus.text = "会话复核通过，当前设备仍有效。"
+                    binding.authStatus.text = getString(R.string.main_message_35)
                     binding.authStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.success))
                 }
                 SessionRefreshDecision.REAUTHENTICATE -> beginAuthentication()
                 SessionRefreshDecision.CHECK_FAILED -> {
-                    binding.authStatus.text = "健康检查已执行，但认证会话暂时无法复核。"
+                    binding.authStatus.text = getString(R.string.main_message_36)
                     binding.authStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.danger))
                 }
             }
@@ -410,24 +410,24 @@ class MainActivity : AppCompatActivity() {
         val api = activeApi ?: return
         healthJob?.cancel()
         binding.refreshHealthButton.isEnabled = false
-        binding.healthStatus.text = "检查中…"
+        binding.healthStatus.text = getString(R.string.main_message_37)
         binding.healthStatus.setTextColor(ContextCompat.getColor(this, R.color.steel_blue_dark))
         healthJob = lifecycleScope.launch {
             val detail = when (val result = api.health()) {
                 is ApiResult.Success -> {
                     if (result.value.isOnline) {
-                        binding.healthStatus.text = "在线"
+                        binding.healthStatus.text = getString(R.string.main_message_38)
                         binding.healthStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.success))
                         null
                     } else {
-                        binding.healthStatus.text = "离线"
+                        binding.healthStatus.text = getString(R.string.main_message_39)
                         binding.healthStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.danger))
-                        "服务返回状态：${result.value.serverStatus}"
+                        getString(R.string.main_message_40, result.value.serverStatus)
                     }
                 }
                 is ApiResult.HttpFailure -> {
                     markHealthOffline()
-                    "健康检查失败（HTTP ${result.statusCode}）：${result.message}"
+                    getString(R.string.main_message_41, result.statusCode, result.message)
                 }
                 is ApiResult.NetworkFailure -> {
                     markHealthOffline()
@@ -440,7 +440,7 @@ class MainActivity : AppCompatActivity() {
             }
             val checkedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
             binding.healthCheckedAt.text = buildString {
-                append("最近检查：")
+                append(getString(R.string.main_message_42))
                 append(checkedAt)
                 if (detail != null) {
                     append("\n")
@@ -452,7 +452,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun markHealthOffline() {
-        binding.healthStatus.text = "离线"
+        binding.healthStatus.text = getString(R.string.main_message_43)
         binding.healthStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
     }
 
@@ -461,7 +461,7 @@ class MainActivity : AppCompatActivity() {
         backupStatusJob?.cancel()
         binding.refreshBackupStatusButton.isEnabled = false
         binding.backupFetchStatus.visibility = View.VISIBLE
-        binding.backupFetchStatus.text = "正在获取备份状态…"
+        binding.backupFetchStatus.text = getString(R.string.main_message_44)
         binding.backupFetchStatus.setTextColor(ContextCompat.getColor(this, R.color.steel_blue_dark))
         backupStatusJob = lifecycleScope.launch {
             when (val result = api.backupStatus()) {
@@ -476,14 +476,14 @@ class MainActivity : AppCompatActivity() {
                         return@launch
                     }
                     showBackupStatusUnavailable(
-                        "取不到备份状态（HTTP ${result.statusCode}）：${result.message}",
+                        getString(R.string.main_message_45, result.statusCode, result.message),
                     )
                 }
                 is ApiResult.NetworkFailure -> showBackupStatusUnavailable(
-                    "取不到备份状态：${networkMessage(result.exception, result.automaticRetryCount)}",
+                    getString(R.string.main_message_46, networkMessage(result.exception, result.automaticRetryCount)),
                 )
                 is ApiResult.ProtocolFailure -> showBackupStatusUnavailable(
-                    "取不到备份状态：${result.message}",
+                    getString(R.string.main_message_47, result.message),
                 )
             }
             binding.refreshBackupStatusButton.isEnabled = true
@@ -537,7 +537,7 @@ class MainActivity : AppCompatActivity() {
         binding.backupFetchStatus.text = if (backupCardState.latest == null) {
             message
         } else {
-            "取不到最新状态，已保留上次结果。\n$message"
+            getString(R.string.main_message_48, message)
         }
         binding.backupFetchStatus.setTextColor(ContextCompat.getColor(this, R.color.danger))
     }
@@ -548,7 +548,7 @@ class MainActivity : AppCompatActivity() {
             val isBound = try {
                 withContext(Dispatchers.IO) { app.totpSecretStore.isBound() }
             } catch (_: Exception) {
-                showTotpMessage("无法读取本机 TOTP 绑定状态。", isError = true)
+                showTotpMessage(getString(R.string.main_message_49), isError = true)
                 false
             }
             renderTotpBinding(isBound)
@@ -564,12 +564,12 @@ class MainActivity : AppCompatActivity() {
             try {
                 withContext(Dispatchers.IO) { app.totpSecretStore.bind(secretInput) }
                 renderTotpBinding(true)
-                showTotpMessage("绑定成功。请完成生物识别，并立即与腾讯验证器核对一次。")
+                showTotpMessage(getString(R.string.main_message_50))
                 promptForTotp(TotpBiometricAction.SHOW_CODE)
             } catch (error: IllegalArgumentException) {
-                showTotpMessage(error.message ?: "密钥不是有效的 Base32 内容。", isError = true)
+                showTotpMessage(error.message ?: getString(R.string.main_message_51), isError = true)
             } catch (_: Exception) {
-                showTotpMessage("无法安全保存 TOTP 密钥，请重试。", isError = true)
+                showTotpMessage(getString(R.string.main_message_52), isError = true)
             } finally {
                 secretInput.fill('\u0000')
             }
@@ -578,10 +578,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmTotpUnbind() {
         AlertDialog.Builder(this)
-            .setTitle("解除本机 TOTP 绑定")
+            .setTitle(getString(R.string.main_message_53))
             .setMessage(R.string.totp_unbind_warning)
-            .setNegativeButton("取消", null)
-            .setPositiveButton("继续") { _, _ -> promptForTotp(TotpBiometricAction.UNBIND) }
+            .setNegativeButton(getString(R.string.main_message_54), null)
+            .setPositiveButton(getString(R.string.main_message_55)) { _, _ -> promptForTotp(TotpBiometricAction.UNBIND) }
             .show()
     }
 
@@ -589,7 +589,7 @@ class MainActivity : AppCompatActivity() {
         val availability = BiometricManager.from(this)
             .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
-            showTotpMessage("强生物识别不可用，不能显示或清除本机 TOTP 密钥。", isError = true)
+            showTotpMessage(getString(R.string.main_message_56), isError = true)
             return
         }
 
@@ -607,18 +607,18 @@ class MainActivity : AppCompatActivity() {
         updateBiometricControls()
         pendingTotpAction = action
         val title = when (action) {
-            TotpBiometricAction.SHOW_CODE -> "显示后台动态验证码"
-            TotpBiometricAction.UNBIND -> "确认解除本机绑定"
+            TotpBiometricAction.SHOW_CODE -> getString(R.string.main_message_57)
+            TotpBiometricAction.UNBIND -> getString(R.string.main_message_58)
         }
         val subtitle = when (action) {
-            TotpBiometricAction.SHOW_CODE -> "验证通过后才会在屏幕上显示 6 位码"
-            TotpBiometricAction.UNBIND -> "只清除本机密钥，不影响后台或腾讯验证器"
+            TotpBiometricAction.SHOW_CODE -> getString(R.string.main_message_59)
+            TotpBiometricAction.UNBIND -> getString(R.string.main_message_60)
         }
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .setNegativeButtonText("取消")
+            .setNegativeButtonText(getString(R.string.main_message_61))
             .build()
         val prompt = BiometricPrompt(
             this,
@@ -632,7 +632,7 @@ class MainActivity : AppCompatActivity() {
             totpBiometricPrompt = null
             pendingTotpAction = null
             finishBiometricPrompt(lease, BiometricPromptTerminalState.FAILED)
-            showTotpMessage("无法启动 TOTP 身份验证，请重试。", isError = true)
+            showTotpMessage(getString(R.string.main_message_62), isError = true)
         }
     }
 
@@ -646,7 +646,7 @@ class MainActivity : AppCompatActivity() {
                 TotpBiometricAction.SHOW_CODE -> startTotpDisplay()
                 TotpBiometricAction.UNBIND -> clearTotpBinding()
                 null -> showTotpMessage(
-                    "TOTP 身份验证被系统或其他验证流程打断，请重试；本机密钥未被判定失效。",
+                    getString(R.string.main_message_63),
                     isError = true,
                 )
             }
@@ -668,7 +668,7 @@ class MainActivity : AppCompatActivity() {
         override fun onAuthenticationFailed() {
             super.onAuthenticationFailed()
             if (!biometricPromptCoordinator.isActive(lease)) return
-            showTotpMessage("未识别，请重试生物识别。", isError = true)
+            showTotpMessage(getString(R.string.main_message_64), isError = true)
         }
     }
 
@@ -692,7 +692,7 @@ class MainActivity : AppCompatActivity() {
                     if (currentTotpCode == null) {
                         hideTotpCode()
                         renderTotpBinding(false)
-                        showTotpMessage("本机 TOTP 密钥不可用，请重新绑定。", isError = true)
+                        showTotpMessage(getString(R.string.main_message_65), isError = true)
                         return@launch
                     }
                     displayedWindow = window
@@ -742,9 +742,9 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.IO) { app.totpSecretStore.clear() }
                 hideTotpCode()
                 renderTotpBinding(false)
-                showTotpMessage("本机 TOTP 密钥已清除；后台与腾讯验证器没有变化。")
+                showTotpMessage(getString(R.string.main_message_66))
             } catch (_: Exception) {
-                showTotpMessage("无法完整清除本机 TOTP 密钥，请重试。", isError = true)
+                showTotpMessage(getString(R.string.main_message_67), isError = true)
             }
         }
     }
@@ -788,7 +788,7 @@ class MainActivity : AppCompatActivity() {
                     biometricPromptCoordinator.abandonForLifecycle()
                     updateBiometricControls()
                     showAuthError(
-                        "界面已离开，登录身份验证已取消；返回后请重新发起登录。",
+                        getString(R.string.main_message_68),
                         canRetry = true,
                         canPair = false,
                     )
@@ -803,7 +803,7 @@ class MainActivity : AppCompatActivity() {
                     pendingTotpAction = null
                     biometricPromptCoordinator.abandonForLifecycle()
                     updateBiometricControls()
-                    showTotpMessage("界面已离开，TOTP 身份验证已取消；请重新操作。", isError = true)
+                    showTotpMessage(getString(R.string.main_message_69), isError = true)
                 }
             }
         }
@@ -827,7 +827,7 @@ class MainActivity : AppCompatActivity() {
 
         if (biometricPromptCoordinator.activePurpose == BiometricPromptPurpose.LOGIN_SIGNATURE) {
             showTotpMessage(
-                "登录身份验证正在进行，请先完成当前的身份验证。",
+                getString(R.string.main_message_70),
                 tracksActiveLogin = true,
             )
         } else if (showingLoginBiometricBusyMessage) {

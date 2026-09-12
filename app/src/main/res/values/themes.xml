@@ -1,13 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Zhiliaohub" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.Zhiliaohub" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/steel_blue</item>
         <item name="colorPrimaryDark">@color/steel_blue_dark</item>
         <item name="colorAccent">@color/steel_blue</item>
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/mist</item>
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColorSecondary">@color/steel_blue_dark</item>
+        <item name="android:textColorHint">@color/steel_blue_dark</item>
+        <item name="android:textSize">@dimen/type_body</item>
+        <item name="buttonStyle">@style/Archive.Button</item>
+        <item name="editTextStyle">@style/Archive.Input</item>
         <item name="android:navigationBarColor">@color/mist</item>
         <item name="android:windowBackground">@color/mist</item>
     </style>
+    <style name="Archive.Kicker" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">@dimen/type_caption</item>
+        <item name="android:textColor">@color/steel_blue</item>
+        <item name="android:letterSpacing">0.12</item>
+        <item name="android:paddingTop">@dimen/space_xl</item>
+        <item name="android:paddingBottom">@dimen/space_lg</item>
+    </style>
+    <style name="Archive.Button" parent="Widget.AppCompat.Button">
+        <item name="android:minHeight">@dimen/control_height</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/type_body</item>
+        <item name="android:textColor">@color/button_ink</item>
+        <item name="backgroundTint">@color/steel_blue</item>
+    </style>
+    <style name="Archive.SecondaryButton" parent="Archive.Button">
+        <item name="android:textColor">@color/ink</item>
+        <item name="backgroundTint">@color/card_background</item>
+    </style>
+    <style name="Archive.DangerButton" parent="Archive.Button">
+        <item name="android:textColor">@color/danger</item>
+        <item name="backgroundTint">@color/warning_background</item>
+    </style>
+    <style name="Archive.Input" parent="Widget.AppCompat.EditText">
+        <item name="android:minHeight">@dimen/control_height</item>
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textColorHint">@color/steel_blue_dark</item>
+    </style>
 </resources>
-

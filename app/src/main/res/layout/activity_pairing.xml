@@ -8,20 +8,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="@dimen/page_gutter">
+
+        <TextView
+            style="@style/Archive.Kicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/pairing_eyebrow" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/pairing_title"
             android:textColor="@color/ink"
-            android:textSize="26sp"
+            android:textSize="@dimen/type_title"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/pairing_description"
             android:textColor="@color/steel_blue_dark" />
 
@@ -29,26 +35,40 @@
             android:id="@+id/serverValue"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/space_lg"
             android:textColor="@color/steel_blue_dark"
             android:textIsSelectable="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xl"
+            android:labelFor="@id/deviceNameInput"
+            android:text="@string/device_name_hint" />
 
         <EditText
             android:id="@+id/deviceNameInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="@dimen/space_md"
             android:hint="@string/device_name_hint"
             android:importantForAutofill="no"
             android:inputType="textCapSentences"
             android:maxLength="100"
             android:maxLines="1" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_lg"
+            android:labelFor="@id/pairingCodeInput"
+            android:text="@string/pairing_code_label" />
+
         <EditText
             android:id="@+id/pairingCodeInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:hint="@string/pairing_code_hint"
             android:importantForAutofill="no"
             android:imeOptions="actionDone"
@@ -56,21 +76,21 @@
             android:letterSpacing="0.12"
             android:maxLength="11"
             android:maxLines="1"
-            android:textSize="22sp" />
+            android:textSize="@dimen/type_status" />
 
         <ProgressBar
             android:id="@+id/progress"
             style="?android:attr/progressBarStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="@dimen/space_md"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/statusMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:accessibilityLiveRegion="polite"
             android:textColor="@color/danger"
             android:visibility="gone" />
@@ -79,21 +99,23 @@
             android:id="@+id/pairButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="@dimen/space_xl"
             android:text="@string/submit_pairing" />
 
         <Button
+            style="@style/Archive.SecondaryButton"
             android:id="@+id/settingsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/change_server_address" />
 
         <Button
+            style="@style/Archive.SecondaryButton"
             android:id="@+id/cancelButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/space_sm"
             android:text="@string/back" />
     </LinearLayout>
 </ScrollView>

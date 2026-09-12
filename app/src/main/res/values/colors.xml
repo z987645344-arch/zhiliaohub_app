@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ink">#172229</color>
-    <color name="mist">#EEF2F3</color>
-    <color name="steel_blue">#436777</color>
-    <color name="steel_blue_dark">#2E4B58</color>
-    <color name="card_background">#FFFFFF</color>
-    <color name="divider">#CFD8DC</color>
-    <color name="success">#1B6E3D</color>
-    <color name="danger">#B3261E</color>
-    <color name="warning_background">#FFF1D6</color>
+    <color name="ink">#EDF0F1</color>
+    <color name="mist">#20282D</color>
+    <color name="steel_blue">#C8CDB8</color>
+    <color name="steel_blue_dark">#BAC4C9</color>
+    <color name="card_background">#2A333A</color>
+    <color name="divider">#465158</color>
+    <color name="success">#B9CBB1</color>
+    <color name="danger">#F0B0A6</color>
+    <color name="warning_background">#3F2D2E</color>
+    <color name="button_ink">#222A2E</color>
 </resources>
-

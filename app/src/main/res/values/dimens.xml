@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_section">32dp</dimen>
+    <dimen name="page_gutter">24dp</dimen>
+    <dimen name="radius_control">10dp</dimen>
+    <dimen name="radius_card">16dp</dimen>
+    <dimen name="hairline">1dp</dimen>
+    <dimen name="focus_line">2dp</dimen>
+    <dimen name="control_height">48dp</dimen>
+    <dimen name="type_caption">12sp</dimen>
+    <dimen name="type_body">16sp</dimen>
+    <dimen name="type_section">20sp</dimen>
+    <dimen name="type_status">24sp</dimen>
+    <dimen name="type_title">36sp</dimen>
+    <dimen name="type_code">36sp</dimen>
+</resources>
