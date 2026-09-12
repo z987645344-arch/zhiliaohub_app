@@ -97,7 +97,7 @@
                     android:text="@string/server_settings" />
 
                 <Button
-                    style="?android:attr/buttonBarButtonStyle"
+                    style="@style/Archive.SecondaryButton"
                     android:id="@+id/retryAuthButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -106,7 +106,7 @@
                     android:visibility="gone" />
 
                 <Button
-                    style="?android:attr/buttonBarButtonStyle"
+                    style="@style/Archive.SecondaryButton"
                     android:id="@+id/pairButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

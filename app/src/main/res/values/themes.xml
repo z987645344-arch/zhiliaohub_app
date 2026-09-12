@@ -33,7 +33,7 @@
     </style>
     <style name="Archive.SecondaryButton" parent="Archive.Button">
         <item name="android:textColor">@color/ink</item>
-        <item name="backgroundTint">@color/card_background</item>
+        <item name="backgroundTint">@color/archive_secondary_button_background</item>
     </style>
     <style name="Archive.DangerButton" parent="Archive.Button">
         <item name="android:textColor">@color/danger</item>
