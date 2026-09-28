@@ -11,4 +11,8 @@
     <color name="danger">#F2A595</color>
     <color name="warning_background">#2A1714</color>
     <color name="button_ink">#17130D</color>
+    <color name="amber_hot">#FFD08A</color>
+    <color name="lamp_glow">#2EF3B35A</color>
+    <color name="card_warm">#1F1B16</color>
+    <color name="card_stroke">#4DF3B35A</color>
 </resources>

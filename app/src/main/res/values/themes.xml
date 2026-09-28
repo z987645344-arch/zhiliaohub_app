@@ -14,7 +14,7 @@
         <item name="buttonStyle">@style/Archive.Button</item>
         <item name="editTextStyle">@style/Archive.Input</item>
         <item name="android:navigationBarColor">@color/mist</item>
-        <item name="android:windowBackground">@color/mist</item>
+        <item name="android:windowBackground">@drawable/bg_window</item>
     </style>
     <style name="Archive.Kicker" parent="Widget.AppCompat.TextView">
         <item name="android:fontFamily">monospace</item>
@@ -23,6 +23,21 @@
         <item name="android:letterSpacing">0.12</item>
         <item name="android:paddingTop">@dimen/space_xl</item>
         <item name="android:paddingBottom">@dimen/space_lg</item>
+        <item name="android:drawableStart">@drawable/node_dot</item>
+        <item name="android:drawablePadding">@dimen/space_sm</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+    <style name="Archive.BrandMark">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_brand_mark</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
+        <item name="android:scaleType">fitEnd</item>
+        <item name="android:src">@drawable/brand_avatar</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:contentDescription">@null</item>
     </style>
     <style name="Archive.Button" parent="Widget.AppCompat.Button">
         <item name="android:minHeight">@dimen/control_height</item>
