@@ -6,6 +6,12 @@
 - `res/values/colors.xml`：10 个颜色值由灰绿水泥灰改为网站同款中性黑灰 + 琥珀（主色 `#F3B35A`、背景 `#09090B`、卡片 `#17171A`、正文 `#ECECEE`、次要文字 `#A1A1AA`）。**资源名沿用旧名**（如 `steel_blue`），布局、样式与 Kotlin 中的全部 `R.color.*` 引用不变。
 - `res/drawable/ic_app.xml`：启动图标由蓝灰圆底白线改为琥珀圆底深色线，图形不变。
 - 未改：布局、`themes.xml` 结构、全部 Kotlin 代码；TOTP、设备密钥、加密存储、网络安全配置、`AndroidManifest.xml`、`build.gradle.kts` 与版本号均未触碰。
+- **完整改版与品牌头像（同轮追加）**：
+  - 窗口背景改为 `drawable/bg_window.xml`（黑灰底 + 左上暖灯径向渐变），经 `themes.xml` 的 `windowBackground` 全局生效。
+  - `bg_card.xml` 改为暖色斜向渐变 + 淡琥珀描边；`Archive.Kicker` 标签前加发光节点 `node_dot.xml`。
+  - 三个页面顶部新增头像品牌标记（`Archive.BrandMark` 样式：琥珀圆角底 `bg_brand_mark.xml` + `drawable/brand_avatar.png`，对读屏隐藏）。
+  - 启动图标由矢量 `ic_app.xml` 换为同名位图 `drawable/ic_app.png`（琥珀底头像 192px），`AndroidManifest.xml` 的引用不变、未改动；lint 可能对无密度目录位图报 IconLocation 警告（非错误）。
+  - 新增颜色 `amber_hot`、`lamp_glow`、`card_warm`、`card_stroke`。字体未加入：仅有网页用 woff2，Android 需 ttf/otf，本环境无法下载。
 - **证据与边界**：本执行环境无 Android SDK（下载源被网络策略拒绝），编译、单元测试与 lint 交由 CI（`assembleProdDebug/QaDebug`、`test*UnitTest`、`lint*`）。未在真机或模拟器上查看，按钮文字与底色对比度只按色值估算（深色字 `#17130D` 对琥珀底约 10:1），**需真机复核**。
 ## v0.7 - 2026-09-13
 
