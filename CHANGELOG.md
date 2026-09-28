@@ -1,5 +1,12 @@
 # Changelog
 
+
+## 2026-09-28 候选（frontend/round-2）—— 配色与网站「Lamp & Node」对齐：中性黑灰 + 琥珀；未合并、未打标、未改版本号
+
+- `res/values/colors.xml`：10 个颜色值由灰绿水泥灰改为网站同款中性黑灰 + 琥珀（主色 `#F3B35A`、背景 `#09090B`、卡片 `#17171A`、正文 `#ECECEE`、次要文字 `#A1A1AA`）。**资源名沿用旧名**（如 `steel_blue`），布局、样式与 Kotlin 中的全部 `R.color.*` 引用不变。
+- `res/drawable/ic_app.xml`：启动图标由蓝灰圆底白线改为琥珀圆底深色线，图形不变。
+- 未改：布局、`themes.xml` 结构、全部 Kotlin 代码；TOTP、设备密钥、加密存储、网络安全配置、`AndroidManifest.xml`、`build.gradle.kts` 与版本号均未触碰。
+- **证据与边界**：本执行环境无 Android SDK（下载源被网络策略拒绝），编译、单元测试与 lint 交由 CI（`assembleProdDebug/QaDebug`、`test*UnitTest`、`lint*`）。未在真机或模拟器上查看，按钮文字与底色对比度只按色值估算（深色字 `#17130D` 对琥珀底约 10:1），**需真机复核**。
 ## v0.7 - 2026-09-13
 
 - **覆盖 3 条工作条目、4 个提交**：`0d36af1` 统一安卓管理助手的暗色层级与显示文案、`8a31a13` 避免输入框标签与占位提示重复朗读、`87040ae` 统一次要按钮样式并补充真机复核记录，以及本条存档提交（`versionName` 升至 `0.7.0`、`versionCode` 8）。含用户可见行为变化，按两段式。

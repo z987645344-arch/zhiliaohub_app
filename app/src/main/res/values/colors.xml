@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ink">#EDF0F1</color>
-    <color name="mist">#20282D</color>
-    <color name="steel_blue">#C8CDB8</color>
-    <color name="steel_blue_dark">#BAC4C9</color>
-    <color name="card_background">#2A333A</color>
-    <color name="divider">#465158</color>
-    <color name="success">#B9CBB1</color>
-    <color name="danger">#F0B0A6</color>
-    <color name="warning_background">#3F2D2E</color>
-    <color name="button_ink">#222A2E</color>
+    <!-- Lamp & Node：与知了hub 网站一致的中性黑灰暗场，琥珀为唯一主色。资源名沿用旧名以免牵动布局与样式引用。 -->
+    <color name="ink">#ECECEE</color>
+    <color name="mist">#09090B</color>
+    <color name="steel_blue">#F3B35A</color>
+    <color name="steel_blue_dark">#A1A1AA</color>
+    <color name="card_background">#17171A</color>
+    <color name="divider">#2E2E33</color>
+    <color name="success">#8FD19E</color>
+    <color name="danger">#F2A595</color>
+    <color name="warning_background">#2A1714</color>
+    <color name="button_ink">#17130D</color>
 </resources>
