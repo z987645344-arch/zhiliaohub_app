@@ -6,6 +6,7 @@
 - **问题**：人物在旧图标里偏下：旧版是把去底头像直接压在琥珀圆角方块上，并靠 `margin-top: 14%`（Flutter 为底部对齐）把肩膀贴到底边，视觉重心明显偏低。
 - **修复**：参考豆包式「外框 + 内圆」：琥珀渐变圆角方块外框（圆角 22.5%），中间浅奶油色内圆（直径 80%），人物头部居中、肩膀被内圆底边裁切；由同一张 1024px 母版导出各尺寸，图标自带底色，所以各端不再叠加底色、边框、内边距或偏移。
   - 启动图标 `drawable/ic_app.png`（192px）换成新图标，目录不变（qa 变体用同目录同名的 `ic_app.xml` 覆盖它，挪目录会让高密度屏上的 qa 包误用正式图标）。
+  - 测试版（qa 变体）启动图标由橙色「T」矢量图 `qa/res/drawable/ic_app.xml` 改为同一「外框 + 内圆」版式的黑色剪影 `ic_app.png`（192px），与正式版彩色头像一眼区分；仍在 `drawable/` 同名覆盖正式图标，README 同步。
   - 界面品牌标记 `brand_avatar.png` 换成新图标（176px），并从 `drawable/` 移到 `drawable-xxxhdpi/`：放在 `drawable/` 会被当作 mdpi，在高密度屏上放大发虚。
   - `themes.xml` 的 `Archive.BrandMark` 去掉底色与内边距，`scaleType` 由 `fitEnd` 改为 `fitCenter`；不再使用的 `bg_brand_mark.xml` 删除。
 - **证据**：本机无 Android SDK，编译以 CI 为准；真机视觉需用户确认。

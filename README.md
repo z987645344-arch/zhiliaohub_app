@@ -128,7 +128,7 @@ app/src/main/
     └── xml/        # 网络安全与数据导出规则
 
 app/src/qa/res/
-└── drawable/ic_app.xml # 仅测试版使用的橙色T图标；无独立Kotlin源码
+└── drawable/ic_app.png # 仅测试版使用的黑色剪影图标（外框 + 内圆，与正式版头像区分）；无独立Kotlin源码
 ```
 
 ## 主要依赖
