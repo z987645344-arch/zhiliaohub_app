@@ -153,3 +153,10 @@ app/src/qa/res/
 2026-09-11 在本机完成TOTP核心与安全契约验证：RFC 6238附录B的6个SHA-1时间点、RFC 4648 Base32有/无填充、固定Speakeasy期望值、AES-GCM密文往返、备份排除、无网络/日志依赖、生物识别显示门和会话刷新401决策均有JVM测试。两个Flavor测试、Lint与Debug构建均通过。真机Keystore/DataStore生命周期、生物识别、与腾讯验证器对码仍须在用户重绑仪式中验证，不能由JVM测试代报通过。
 
 仓库使用 [GitHub Actions](https://github.com/z987645344-arch/zhiliaohub_app/actions) 在 push 或 pull request 到 `main` 时执行 Debug 编译、JVM 单元测试和 Android Lint；CI 不运行模拟器或替代人工真机验证。
+
+## 版权说明 / License
+
+本项目为作者个人作品，**保留所有权利**，公开仅供浏览与评估，未经许可不得复制、部署或用于对外服务。详见 [LICENSE](LICENSE)。
+
+This is a personal project. **All rights reserved.** Public for viewing and evaluation only; see [LICENSE](LICENSE).
+
