@@ -131,6 +131,14 @@
             android:text="@string/reset_pairing" />
 
         <Button
+            android:id="@+id/aboutButton"
+            style="@style/Archive.SecondaryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_section"
+            android:text="@string/about_title" />
+
+        <Button
             style="@style/Archive.SecondaryButton"
             android:id="@+id/cancelButton"
             android:layout_width="match_parent"

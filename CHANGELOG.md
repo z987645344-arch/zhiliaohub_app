@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-12 新增关于页与自动生成的开源许可清单
+
+- `SettingsActivity.kt`、`activity_settings.xml`：在设置页增加“关于”入口，不占主界面，不改连接维护、认证或本地凭据处理。
+- `AboutActivity.kt`、`activity_about.xml`、`strings.xml`、`AndroidManifest.xml`：新增非导出的关于 Activity；应用名取实际安装包标签，版本以 `BuildConfig.VERSION_NAME` 读取；版权原样显示 `© 2026 知了 · 保留所有权利`，无末尾句号，全部固定文案走字符串资源。沿用 Lamp & Node 的主题、颜色与尺寸，不新增颜色。
+- `gradle/libs.versions.toml`、根与 `app/build.gradle.kts`：锁定构建期插件 `com.jaredsburrows.license:0.9.91`，自动解析运行时直接及间接依赖的 POM 许可证；生成带共享许可证正文的 Full JSON，不增加运行时依赖，不引入 GMS。插件默认共享报告输出目录在双 flavor 联构时触发 Gradle 隐式依赖验证，改为各任务独立报告目录；通过生成资产任务把各 variant 的清单放到 `build/generated/licenseAssets/<variant>/`，由 AGP 自动打包，避免写进源码或互相覆盖。
+- `OpenSourceLicenseReport.kt`、`OpenSourceLicensesActivity.kt`、`activity_open_source_licenses.xml`、`item_open_source_license.xml`：原生暗色列表显示组件名、坐标与许可证名，可离线打开许可证正文；读取打包 JSON，不使用 WebView、不发网络请求、不手抄依赖清单。元数据缺失时明确提示，不静默丢掉组件。
+- `AboutAndLicensesTest.kt`：新增三项 JVM 测试，锁住精确版权与动态版本 API、真实生成文件存在且组件数大于直接依赖数、全运行时 POM 归属覆盖、间接 okio 的许可证正文、无 GMS，以及解析结果的库名/许可证名/离线正文。多平台实现包的 `-android/-jvm` 坐标对应根 POM，覆盖断言按这一归属核对，而非误把实现包坐标当作 POM 坐标。
+- **本机证据**：改动前 prod/qa 各 **42/42**，改动后各 **45/45**；两个 Debug APK 构建成功。两侧 Lint 均 **0 errors**，警告维持 prod 8 / qa 9；`git diff --check` 通过。实际 APK 中各有 **62** 个许可证组件，大于 Gradle 解析出的 **9** 个直接模块（源码显式声明 7 项运行时依赖，另含自动注入模块），包含 `com.squareup.okio:okio:3.16.2`；所有组件都有许可证名称，附有 Apache-2.0 与 BSD-3-Clause 正文；清单 GMS 条目 0。aapt 从产物确认版本保持 **0.8.1 / versionCode 10**，关于与许可 Activity 已声明。
+- **边界**：SDK 通过本次 Gradle 进程环境指向已安装目录，未改机器配置；未改版本号、运行时依赖声明、认证/配对/签名/TOTP/网络层/备份状态，也不碰其它仓库。未安装真机、未验收截图、未验证生产服务，未出 release 签名包、未运行远程 CI；只提交，不推送、不打标。真机请从“设置 → 关于 → 开源许可”检查应用名/版本/版权行、非空列表中的 okio 与许可证正文。
+
 ## 2026-10-09 补充公开仓库版权声明与使用边界
 
 - `LICENSE`：原样收录用户定稿的中英双语版权声明，与知了hub 主站本轮声明逐字一致；中文在前、以 `---` 分隔，UTF-8 无 BOM、LF 换行，保留定稿末尾空行。第三方组件、模型与素材仍遵循各自许可证。

@@ -1,6 +1,7 @@
 package com.zhiliaohub.app.ui
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -44,6 +45,9 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.resetPairingButton.setOnClickListener { confirmResetPairing() }
         binding.cancelButton.setOnClickListener { finish() }
+        binding.aboutButton.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
 
         lifecycleScope.launch {
             val settings = app.appPreferences.current()

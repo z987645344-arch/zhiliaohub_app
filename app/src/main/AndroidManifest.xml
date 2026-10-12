@@ -20,6 +20,12 @@
         android:usesCleartextTraffic="true">
 
         <activity
+            android:name=".ui.AboutActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.OpenSourceLicensesActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false" />
         <activity

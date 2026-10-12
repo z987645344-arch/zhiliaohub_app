@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_lg"
+    android:background="@drawable/bg_card"
+    android:orientation="vertical"
+    android:padding="@dimen/space_lg">
+    <TextView
+        android:id="@+id/libraryName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/ink"
+        android:textSize="@dimen/type_section"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/libraryCoordinate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:textColor="@color/steel_blue_dark"
+        android:textSize="@dimen/type_caption" />
+    <TextView
+        android:id="@+id/libraryLicenses"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:textColor="@color/ink" />
+    <Button
+        android:id="@+id/detailsButton"
+        style="@style/Archive.SecondaryButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_sm"
+        android:text="@string/open_source_license_details" />
+</LinearLayout>

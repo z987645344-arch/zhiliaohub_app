@@ -10,6 +10,7 @@ datastore = "1.2.1"
 okhttp = "5.3.0"
 junit = "4.13.2"
 json = "20251224"
+licensePlugin = "0.9.91"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -25,3 +26,4 @@ json = { module = "org.json:json", version.ref = "json" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+license-report = { id = "com.jaredsburrows.license", version.ref = "licensePlugin" }

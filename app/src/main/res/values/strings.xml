@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">知了hub 管理助手</string>
+    <string name="about_title">关于</string>
+    <string name="about_eyebrow">ABOUT / 知了hub</string>
+    <string name="about_copyright">© 2026 知了 · 保留所有权利</string>
+    <string name="about_description">一间随身的编辑室，陪你照看自己的站点。</string>
+    <string name="open_source_licenses_title">开源许可</string>
+    <string name="open_source_licenses_eyebrow">OPEN SOURCE / 致谢</string>
+    <string name="open_source_licenses_description">这些开源组件支持着应用。清单由构建时的实际依赖自动生成，也包含间接依赖。</string>
+    <string name="open_source_licenses_loading">正在读取本机许可证清单…</string>
+    <string name="open_source_licenses_unavailable">暂时无法读取许可证清单，请重新打开；若仍为空，请检查安装包是否完整。</string>
+    <string name="open_source_licenses_count">共 %1$d 个组件</string>
+    <string name="open_source_license_details">查看许可证正文</string>
+    <string name="open_source_license_unknown">依赖元数据未提供许可证名称</string>
+    <string name="open_source_license_unbundled">清单未附这份许可证的正文。原始声明地址：%1$s</string>
+    <string name="open_source_license_separator">、</string>
+    <string name="close">关闭</string>
     <string name="settings_title">连接你的站点</string>
     <string name="pairing_title">让手机成为钥匙</string>
     <string name="main_title">知了hub</string>
